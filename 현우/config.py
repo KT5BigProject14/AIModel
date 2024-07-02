@@ -19,6 +19,8 @@ config = {
     "path" : {
         "input_directory" : "./documents",
     },
+    "search_type" : "similarity",   # "mmr"
+    "ensemble_search_type" : "mmr",
     "similarity_k" : 0.25, # 유사도 측정시 기준 값
     "retriever_k" : 5, # top k 개 청크 가져오기
 }

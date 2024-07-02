@@ -31,7 +31,6 @@ class RAGPipeline:
         self.SIMILARITY_THRESHOLD = config["similarity_k"]
         
         
-        
         self.llm = ChatOpenAI(
             model       = config['llm_predictor']['model_name'],
             temperature = config['llm_predictor']['temperature']
