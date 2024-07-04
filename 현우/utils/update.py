@@ -11,7 +11,7 @@ from langchain_community.document_loaders.csv_loader import CSVLoader
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
-
+from tqdm import tqdm
 
 def split_document(doc: Document) -> list[Document]:
     """ LangchainDocument 객체를 받아 적절히 청크로 나눕니다. """
@@ -40,7 +40,7 @@ def convert_file_to_documents(vector_store, file, SIMILARITY_THRESHOLD):
     if file.name.endswith(".txt"):
         content = file.read().decode('utf-8')
         results = vector_store.similarity_search_with_score(content, k=1)
-        print(f'유사도 검사 중...results : {results}')
+        # print(f'유사도 검사 중...results : {results}')
         if results and results[0][1] <= SIMILARITY_THRESHOLD:
             print(f"기존 DB에 유사한 청크가 있음으로 판단되어 추가되지 않음 - {results[0][1]}")
         else: 
@@ -49,11 +49,11 @@ def convert_file_to_documents(vector_store, file, SIMILARITY_THRESHOLD):
     elif file.name.endswith(".csv"): 
         loader = CSVLoader(file_path=file.name)
         temp_documents = loader.load()
-        for i, row in enumerate(temp_documents):
+        for i, row in enumerate(tqdm(temp_documents, total=len(temp_documents), desc='유사도 검사 중...')):
             content = row.page_content
             results = vector_store.similarity_search_with_score(content, k=1)
-            print(f'유사도 검사 중...results : {results}')
-            if results and results[0][1] <= SIMILARITY_THRESHOLD:
+            # print(f'유사도 검사 중...results : {results}')
+            if results and (results[0][1] <= SIMILARITY_THRESHOLD):
                 print(f"기존 DB에 유사한 청크가 있음으로 판단되어 추가되지 않음  - {results[0][1]}")
                 continue
         
@@ -63,11 +63,11 @@ def convert_file_to_documents(vector_store, file, SIMILARITY_THRESHOLD):
     elif file.name.endswith(".pdf"):
         loader = PyPDFLoader(file.name)
         temp_documents = loader.load()
-        for i, row in enumerate(temp_documents):
+        for i, row in enumerate(tqdm(temp_documents, total=len(temp_documents), desc='유사도 검사 중...')):
             content = row.page_content
             results = vector_store.similarity_search_with_score(content, k=1)
-            print(f'유사도 검사 중...results : {results}')
-            if results and results[0][1] <= SIMILARITY_THRESHOLD:
+            # print(f'유사도 검사 중...results : {results}')
+            if results and (results[0][1] <= SIMILARITY_THRESHOLD):
                 print(f"기존 DB에 유사한 청크가 있음으로 판단되어 추가되지 않음  - {results[0][1]}")
                 continue
             
