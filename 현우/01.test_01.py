@@ -7,7 +7,8 @@ if __name__=="__main__":
 
     pipeline = Ragpipeline()
     obj = RagDocument()
-    obj.file.path = './documents/sample.txt'
+    obj.file.path = './documents/크롤링_리스트.csv'
+    # obj.file.path = './documents/[정책][제약산업정보포털][2019.04.08]인도 통관 및 운송.pdf'
     
     # 벡터 DB에 문서 업데이트 시도
     file_path = obj.file.path

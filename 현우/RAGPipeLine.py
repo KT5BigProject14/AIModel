@@ -178,30 +178,19 @@ class Ragpipeline:
         """
         벡터 스토어 업데이트: 새로운 문서 추가 시 호출 
         PDF파일 또는 CSV파일 또는 hwp파일, word 파일 등 
+        기존 DB에 유사도 검사를 통해 중복되는 내용은 추가하지 않음 
         """
-        upload_documents = convert_file_to_documents(file)
-        
-        new_documents = []
-        for doc in upload_documents:
-            # 유사도 검색 및 점수 계산
-            results = self.vector_store.similarity_search_with_score(doc.page_content, k=1)
-            print(f'유사도 검사 중...results : {results}')
-            if results and results[0][1] <= self.SIMILARITY_THRESHOLD:                          # 유사도 threshold 넘는지 아닌지 확인 
-                print(f"유사한 청크로 판단되어 추가되지 않음 - {results[0][1]}")
-                
-                continue  # 유사한 문서가 존재하면 추가하지 않음
+        upload_documents = convert_file_to_documents(self.vector_store, file, self.SIMILARITY_THRESHOLD)
 
-            chunks = split_document(doc)
-            new_documents.extend(chunks)
-            
-        if new_documents:
-            self.vector_store.add_documents(new_documents)
-            print(f"Added {len(new_documents)} new documents to the vector store")
+        if upload_documents:
+            self.vector_store.add_documents(upload_documents)
+            print(f"Added {len(upload_documents)} new documents to the vector store")
             return True
         else:
             print('모두 유사한 청크로 판단되어 해당 문서가 저장되지 않음')
             return False
     
+
     def delete_vector_db_by_doc_id(self, doc_id):
         """
         주어진 문서 ID에 해당하는 벡터 임베딩을 삭제

@@ -1,5 +1,10 @@
 # 개발 진행 노트 
 
+DataPipeLine이랑 RAGPipeLine 구축하기 
+
+일단 test.py에서 이것저거 테스트해보면서 완벽하게 짜기
+
+
 ### 1단계 RunnableWithMessageHistory
 
 0701
