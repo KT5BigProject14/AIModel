@@ -10,8 +10,8 @@ from langchain_community.chat_message_histories import ChatMessageHistory
 # from langchain.memory import ConversationBufferMemory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
-# from langchain_core.runnables import RunnableBranch, RunnablePassthrough
-# from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnableBranch, RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
 # from langchain.agents import Tool, create_openai_tools_agent, AgentExecutor
 # from langchain import hub
 # from langchain.tools.retriever import create_retriever_tool
@@ -32,7 +32,7 @@ from dotenv import load_dotenv
 # API KEY 정보로드
 load_dotenv()
 
-from utils.prompt import contextualize_q_prompt, qa_prompt
+from utils.prompt import contextualize_q_prompt, qa_prompt, title_generator_system_prompt, post_generator_system_prompt
 from utils.update import split_document, convert_file_to_documents
 
 # intfloat/multilingual-e5-small
@@ -86,19 +86,26 @@ class Ragpipeline:
             model       = config['llm_predictor']['model_name'],
             temperature = config['llm_predictor']['temperature']
         )
-        
         self.vector_store   = self.init_vectorDB()
         self.retriever      = self.init_retriever()  
+        self.chain          = self.init_chat_chain()
+        self.session_histories = {}   
         
-    def init_vectorDB(self):
+        print(f"[초기화] vector_store 초기화 완료")
+        print(f"[초기화] retriever 초기화 완료")
+        print("[초기화] RAG chain 초기화 완료")
+        
+    def init_vectorDB(self, persist_dir=config["chroma"]["persist_dir"]):
         """ Vector store 초기화 """
         embeddings = OpenAIEmbeddings( model=config['embed_model']['model_name'] )                      # 나중에 허깅페이스에서 임베딩 모델 가져오기 
         vector_store = Chroma(
-            persist_directory=config["chroma"]["persist_dir"],  # 있으면 가져오고 없으면 생성
+            persist_directory=persist_dir,  # 있으면 가져오고 없으면 생성
             embedding_function=embeddings
         )
-        print(f"[초기화] vector_store 초기화 완료")
         return vector_store
+    
+    # def get_vectorDB(self):
+    #     return self.vector_store
     
     def init_retriever(self):
         """ Retriever 초기화 """                        # 나중에 FAISS랑 BM25와 함께 Hybrid 또는 EnsembleRetriever 적용 
@@ -106,7 +113,6 @@ class Ragpipeline:
             search_kwargs = {"k": config["retriever_k"]},
             search_type   = "similarity"
         )
-        print(f"[초기화] retriever 초기화 완료")
         return retriever
     
     def init_chat_chain(self):
@@ -126,8 +132,9 @@ class Ragpipeline:
         # 최종 체인 생성
         rag_chat_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)  # 사용자 문의를 받아 리트리버로 전달하여 관련 문서를 가져옵니다. 그런 다음 해당 문서(및 원본 입력)는 LLM으로 전달되어 응답을 생성
 
-        print("[초기화] RAG chain 초기화 완료")
+
         return rag_chat_chain
+    
     
     def chat_generation(self, question: str, session_id: str) -> dict:
         # 채팅 기록 관리
@@ -153,55 +160,51 @@ class Ragpipeline:
         print(f'[응답 생성] 실제 모델 응답: response => \n{response}\n')
         print(f"[응답 생성] 세션 ID [{session_id}]에서 답변을 생성했습니다.")
 
-        # Redis에 대화 기록 저장
-        chat_history_key = f"chat_history:{session_id}"
-        try:
-            print(f'--------> Redis 키: {chat_history_key}')
-            chat_history = self.redis_client.get(chat_history_key)
-            print('-------->',chat_history)
-            if chat_history:
-                chat_history = json.loads(chat_history)
-            else:
-                chat_history = []
-
-            chat_history.append({"question": question, "answer": response["answer"]})
-            print(f'=========> 저장할 대화 기록: {chat_history}')
-            print(f'=========> 저장할 대화 기록 json: {json.dumps(chat_history)}')
-            self.redis_client.set(chat_history_key, json.dumps(chat_history))        
-            print(f"[Redis 저장] 세션 ID [{session_id}]의 대화 기록을 Redis에 저장했습니다.")
-        except Exception as e:
-            print(f"[Redis 저장 실패] 세션 ID [{session_id}]의 대화 기록 저장 중 오류 발생: {e}")
-
         return response["answer"]
+    
+    def title_generation(self, question: str):
+        chain = (
+            {"context": self.retriever, "question": RunnablePassthrough()}
+            | title_generator_system_prompt
+            | self.llm
+            | StrOutputParser()
+        )
+        
+        response = chain.invoke(question)
+        
+        return response
+    
+    def post_generation(self, question: str):
+
+        chain = (
+            {"context": self.retriever, "question": RunnablePassthrough()}
+            | post_generator_system_prompt
+            | self.llm
+            | StrOutputParser()
+        )
+        
+        response = chain.invoke(question)
+        
+        return response
+        
     
     def update_vector_db(self, file, filename) -> bool:
         """
         벡터 스토어 업데이트: 새로운 문서 추가 시 호출 
         PDF파일 또는 CSV파일 또는 hwp파일, word 파일 등 
+        기존 DB에 유사도 검사를 통해 중복되는 내용은 추가하지 않음 
         """
-        upload_documents = convert_file_to_documents(file)
-        
-        new_documents = []
-        for doc in upload_documents:
-            # 유사도 검색 및 점수 계산
-            results = self.vector_store.similarity_search_with_score(doc.page_content, k=1)
-            print(f'유사도 검사 중...results : {results}')
-            if results and results[0][1] <= self.SIMILARITY_THRESHOLD:                          # 유사도 threshold 넘는지 아닌지 확인 
-                print(f"유사한 청크로 판단되어 추가되지 않음 - {results[0][1]}")
-                
-                continue  # 유사한 문서가 존재하면 추가하지 않음
+        upload_documents = convert_file_to_documents(self.vector_store, file, self.SIMILARITY_THRESHOLD)
 
-            chunks = split_document(doc)
-            new_documents.extend(chunks)
-            
-        if new_documents:
-            self.vector_store.add_documents(new_documents)
-            print(f"Added {len(new_documents)} new documents to the vector store")
+        if upload_documents:
+            self.vector_store.add_documents(upload_documents)
+            print(f"Added {len(upload_documents)} new documents to the vector store")
             return True
         else:
             print('모두 유사한 청크로 판단되어 해당 문서가 저장되지 않음')
             return False
     
+
     def delete_vector_db_by_doc_id(self, doc_id):
         """
         주어진 문서 ID에 해당하는 벡터 임베딩을 삭제

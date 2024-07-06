@@ -18,14 +18,47 @@ title_generator_system_prompt = """
 
 """
 
+title_generator_system_prompt = ChatPromptTemplate.from_template(
+"""제시된 질문에 연관된 블로그 게시물의 제목, title을 5개 생성해주세요. 
+한국어로 대답하세요.
+
+예시)
+질문: 인도 
+
+답변: 
+- 인도
+- 인도 최근 경제 동향 
+- 인도 교역 현황과 경제 전망 
+- 인도의 식품산업 트렌드
+- 인도의 AI 산업 발전 현황 
+
+
+#Question: 
+{question} 
+#Context: 
+{context} 
+
+#Answer:"""
+)
+
 # 2. 게시글 생성 
-post_generator_system_prompt="""
-당신은 주어진 title에 대한 게시물을 작성하는 애널리스트입니다. 
+
+post_generator_system_prompt = ChatPromptTemplate.from_template(
+    """당신은 주어진 title에 대한 게시물을 작성하는 애널리스트입니다. 
 관련된 주제에 대해 최신 정보와 주어진 DB정보를 바탕으로 근거있는 게시글을 작성해주세요. 
-적어도 5개 이상의 수주제와 단락을 생성하여 컬럼 및 게시물을 작성해주세요. 
+첫번째는 게시물의 Title을 작성해주세요.
+적어도 3개 이상의 소주제와 5문단이상의 내용을 생성하여 컬럼 및 게시물을 작성해주세요. 
+한국어로 대답하세요. 모든 문장은 '~이다.', '~하다.' 형식으로 문장을 끝내세요.  
 
 
-"""
+#Question: 
+{question} 
+#Context: 
+{context} 
+
+#Answer:"""
+)
+
 
 ######################################################## 대화 프롬프트 #############################################################
 # 1. 사용자 질문 맥락화 프롬프트

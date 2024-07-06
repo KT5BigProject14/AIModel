@@ -1,0 +1,65 @@
+,정보 출처,세부 구분,추출할 정보 설명,담당자,우선순위,URL
+0,인도 특허청,법률_규범,,문승현,1.0,https://iprsearch.ipindia.gov.in/PublicSearch/PublicationSearch/PatentSearchResult
+1,제약산업정보포털,정책,인도 통관 및 운송에 대한 내용,,4.0,https://www.khidi.or.kr/board/view?pageNum=6&rowCnt=10&no1=50&linkId=47399284&menuId=MENU01864&maxIndex=&minIndex=&schType=0&schText=&schStartDate=&schEndDate=&boardStyle=&categoryId=&continent=&country=
+2,인도 무역청,법률_규범,용석 : 전체 사이트 모든 내용(셀레니움?)(크롤링시 상의 필요),,2.0,https://www.indiantradeportal.in/index.jsp?lang=0
+3,인도 무역구제총국,법률_규범,용석 : 전체 사이트 모든 내용(셀레니움?)(크롤링시 상의 필요),,3.0,https://www.dgtr.gov.in/
+4,FedEx 공식 네이버 블로그,시장동향,인도 및 세계 비지니스 동향 포함 (일부 카테고리 전체 크롤링),,,https://post.naver.com/my.naver?memberNo=40955917
+5,대한무역투자진흥공사,해외시장뉴스,대한무역투자진흥공사_해외시장뉴스,,,https://www.data.go.kr/data/15034831/openapi.do
+6,대한무역투자진흥공사,시장동향,대한무역투자진흥공사_국가정보,,,https://www.data.go.kr/data/15034830/openapi.do
+7,대한무역투자진흥공사,시장동향,대한무역투자진흥공사_상품DB,,,https://www.data.go.kr/data/15034958/openapi.do
+8,대한무역투자진흥공사,시장동향,대한무역투자진흥공사_무역사기사례,,5.0,https://www.data.go.kr/data/15034754/openapi.do
+9,대한무역투자진흥공사,시장동향,대한무역투자진흥공사_기업성공사례,,,https://www.data.go.kr/data/15034755/openapi.do
+10,대한무역투자진흥공사,정책,대한무역투자진흥공사_UNComtrade 기준 년도별 전세계 수입신고 통계,,,https://data.go.kr/data/15088516/openapi.do
+11,대한무역투자진흥공사,정책,대한무역투자진흥공사_수입규제품목(지역본부별) 정보,,,https://www.data.go.kr/data/15088467/openapi.do
+12,대한무역투자진흥공사,정책,대한무역투자진흥공사_UNComtrade 기준 년도별 전세계 수출신고 통계,,,https://www.data.go.kr/data/15088523/openapi.do
+13,대한무역투자진흥공사,해외시장뉴스,대한무역투자진흥공사_단신속보뉴스,,4.0,https://www.data.go.kr/data/15122662/openapi.do
+14,대한무역투자진흥공사,정책,대한무역투자진흥공사_국가 목록,,,https://www.data.go.kr/data/15116876/openapi.do
+15,대한무역투자진흥공사,정책,대한무역투자진흥공사_출장자료,,,https://www.data.go.kr/data/15116870/openapi.do
+16,대한무역투자진흥공사,정책,대한무역투자진흥공사_글로벌 공급망 인사이트,,,https://www.data.go.kr/data/15122648/openapi.do
+17,대한무역투자진흥공사,시장동향,대한무역투자진흥공사_진출전략,,,https://www.data.go.kr/data/15116867/openapi.do
+18,대한무역투자진흥공사,시장동향,대한무역투자진흥공사_해외진출기업,,,https://www.data.go.kr/data/15034787/fileData.do#tab-layer-file
+19,대한무역투자진흥공사,시장동향,대한무역투자진흥공사_해외기업검색사이트,,,https://www.data.go.kr/data/15034786/fileData.do
+20,주인도 대한민국 대사관,정책,인도 정세 및 경제 동향 확인,,,https://overseas.mofa.go.kr/in-ko/index.do
+21,주뭄바이 대한민국 총영사관,정책,인도 정세 및 경제 동향 확인,,,https://overseas.mofa.go.kr/in-mumbai-ko/index.do
+22,주첸나이 대한민국 총영사관,정책,인도 정세 및 경제 동향 확인,,,https://overseas.mofa.go.kr/in-chennai-ko/index.do
+23,kotra 트라이빅,시장동향,인도 관련 주요 시장 지표 및 수출 분석,,,https://www.kotra.or.kr/bigdata/marketAnalysis#search/IN
+24,kotra 무역투자 24,기타,[문의 상담 정보] 수출 및 해외투자·외국인직접투자(FDI) 및 KOTRA 사업 관련하여 담당 무역관 및 사업부서 안내,,,https://www.kotra.or.kr/newdelhi/subList/40000000090
+25,HSCODE,법률,HSCODE를 얻을 수 있는 사이트,,,https://www.hs-tariff.com/main/hs_mti_ai_main/?device=pc
+26,KITA 한국무역협회,법률,HSCODE에 대한 정보를 얻을 수 있는 사이트,,,https://www.kita.net/tradeNavi/tariffInquiry/tariffInquiryDetail.do?searchNationListOpt=IN&searchKeyword=10&searchYear=2023&gridIndex=1&screenState=false
+27,myfair,인도관련소식,최신 인도 박람회 정보,,,"인도 박람회 일정, 목록, 참가정보 | 마이페어 (myfair.co)"
+28,인도 위생 수입 허가 온라인 신청,법률,링크 안내 정도,,,https://sip.nic.in/Home.aspx
+29,INVEST INDIA,법률,EXIM OVERVIEW IN INDIA 정보 제공,,,https://www.investindia.gov.in/exim
+30,인도 외교통상부,정책,Helpdesk Service 안내,,,https://www.dgft.gov.in/CP/?opt=complaintssuggestion#
+31,한국식품산업협회,정책,FSSAI 인증 및 등록 절차,,,https://www.kfia.or.kr/kfia/sub.php?menukey=1480&mod=view&no=28223&scode=99999999
+32,코트라 ,시장동향,용석 : 전체 사이트 모든 내용(셀레니움?)(크롤링시 상의 필요),,,https://dream.kotra.or.kr/kotranews/cms/com/index.do?MENU_ID=70#;
+33,kita 한국무역협회,시장동향,인도 현지의 뉴스,,,https://overseas.kita.net/in/marketNews/marketNewsList.do
+34,reddit,커뮤니티,"인도 반려동물 커뮤니티( 검색어 예시 feed dog)
+- 검색어 쿼리를 잘 설정해서 크롤링 해야 할 것 같음
+- 댓글도 크롤링 필요
+- 찾아보니 api가 있는거 같네요?",,,https://www.reddit.com/r/IndianPets/search/?q=feed+dog&type=link&cId=0194ed02-79a8-485f-a37c-53d617e8e421&iId=1ea0fe80-fa1e-4e02-97e2-ff8021d1b8d6
+35,,,,,,
+36,,,,,,
+37,,,인도 반려동물사료 시장동향 경쟁사,,,https://dream.kotra.or.kr/kotranews/cms/news/actionKotraBoardDetail.do?pageNo=1&pagePerCnt=10&SITE_NO=3&MENU_ID=190&CONTENTS_NO=2&bbsGbn=254&bbsSn=254&pNttSn=192998&recordCountPerPage=10&viewType=&pStartDt=&pEndDt=&sSearchVal=&pRegnCd=01&pNatCd=699&pKbcCd=1039131&pIndustCd=I001193&pHsCode=&pHsCodeNm=&pHsCdType=&sSearchVal=#;
+38,,,,,,국가 > 아시아 > 인도
+39,,,전체 전시회,,,https://www.gep.or.kr/gept/ovrss/exbi/exbiInfo/allExbiList.do#
+40,,,,,,http://www.expoguide.co.kr/main/fair_country.html?VNum=country&Aidx=A&Cidx=&b_uid=&Bidx=IN&sYear=&sMonth=&search_word=
+41,,,,,,
+42,,,,,,
+43,,,,,,
+44,,,,,,
+45,,,,,,
+46,,,,,,
+47,,,,,,
+48,,,,,,
+49,,,,,,
+50,,,,,,
+51,,,,,,
+52,,,,,,
+53,,,,,,
+54,,,,,,
+55,,,,,,
+56,,,,,,
+57,,,,,,
+58,,,,,,
+59,,,,,,
+60,대한무역투자진흥공사,정책,대한무역투자진흥공사_국가별 물가정보,,,https://www.data.go.kr/data/15122665/openapi.do

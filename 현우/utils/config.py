@@ -21,6 +21,6 @@ config = {
     },
     "search_type" : "similarity",   # "mmr"
     "ensemble_search_type" : "mmr",
-    "similarity_k" : 0.25, # 유사도 측정시 기준 값
-    "retriever_k" : 5, # top k 개 청크 가져오기
+    "similarity_k" : 0.15,          # 새로운 데이터 넣을때, 내용이 기존 DB와 유사도 측정시 기준 값
+    "retriever_k" : 5,              # top k 개 청크 가져오기
 }
