@@ -67,6 +67,32 @@ async def stream_log(request: Request):
         session_id = input_data.get('session_id')
         question = input_data.get('input')
         response = ragpipe.chat_generation(question=question)
+        response = ragpipe.invoke(
+            {"input": question, "session_id": session_id, "user_email": user_email})
+        return JSONResponse(content=response)
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    
+@app.post("/chain/generate/title")
+async def generate_title(request: Request):
+    # try:
+        body = await request.json()
+        print(body['question'])
+        response = ragpipe.title_generation(question=body['question'])
+        print(response)
+        return JSONResponse(content=response)
+    # except Exception as e:
+    #     raise HTTPException(status_code=422, detail=str(e))
+    
+@app.post("/chain/generate/text")
+async def generate_text(request: Request):
+    try:
+        body = await request.json()
+        input_data = body['input']
+        user_email = input_data['user_email']
+        session_id = input_data.get('session_id')
+        question = input_data.get('input')
+        
         # response = ragpipe.invoke(
         #     {"input": question, "session_id": session_id, "user_email": user_email})
         return JSONResponse(content=response)
