@@ -23,7 +23,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from utils.prompt import contextualize_q_prompt, qa_prompt, title_generator_system_prompt, post_generator_system_prompt
+from utils.prompt import contextualize_q_prompt, qa_prompt, title_generator_prompt, text_generator_prompt
 from utils.redis_utils import save_message_to_redis, get_messages_from_redis
 from core.redis_config import redis_conn  # Redis 설정 임포트
 from langchain_core.runnables import RunnableParallel
@@ -62,6 +62,8 @@ class Ragpipeline(Runnable):
         self.vector_store = self.init_vectorDB()
         self.retriever = self.init_retriever()
         self.chain = self.init_chat_chain()
+        self.title_chain = self.init_title_chain()
+        self.text_chain = self.init_text_chain()
         self.session_histories = {}
         self.current_user_email = None
         self.current_session_id = None
@@ -94,6 +96,23 @@ class Ragpipeline(Runnable):
             history_aware_retriever, question_answer_chain)
         print("[초기화] RAG chain 초기화 완료")
         return rag_chat_chain
+    
+    def init_title_chain(self):
+        question_answer_chain = create_stuff_documents_chain(
+            self.llm, title_generator_prompt)
+        rag_title_chain = create_retrieval_chain(
+            self.retriever, question_answer_chain)
+        print("[초기화] RAG title chain 초기화 완료")
+        return rag_title_chain
+    # title은 post를 이용해서 만드는 것도..?
+    
+    def init_text_chain(self):
+        question_answer_chain = create_stuff_documents_chain(
+            self.llm, text_generator_prompt)
+        rag_text_chain = create_retrieval_chain(
+            self.retriever, question_answer_chain)
+        print("[초기화] RAG post chain 초기화 완료")
+        return rag_text_chain
 
     def invoke(self, input, config=None, **kwargs):
         self.current_user_email = input["user_email"]
@@ -148,6 +167,8 @@ class Ragpipeline(Runnable):
                               self.current_session_id, response["answer"])
 
         print(f'[응답 생성] 실제 모델 응답: response => \n{response}\n')
+        print(response["answer"])
+        print(type(response["answer"]))
         return response["answer"]
 
     def update_vector_db(self, file, filename) -> bool:
@@ -183,27 +204,29 @@ class Ragpipeline(Runnable):
             print(f"[벡터 DB 삭제 실패] 문서 ID [{doc_id}]에 대한 임베딩을 찾을 수 없습니다.")
             
     def title_generation(self, question: str):
-        
-        chain = (
-            {"context": self.retriever, "question": RunnablePassthrough()}
-            | title_generator_system_prompt
-            | self.llm
-            | StrOutputParser()
-        )
-        
-        response = chain.invoke(question)
-        
+        title_chain = self.title_chain # title prompt + retrieval chain 선언
+        response = title_chain.invoke({'input':question})
+        # print(response)
         return response
         
-    def post_generation(self, question: str):
+    def text_generation(self, question: str):
 
-        chain = (
-            {"context": self.retriever, "question": RunnablePassthrough()}
-            | post_generator_system_prompt
-            | self.llm
-            | StrOutputParser()
-        )
+        # chain = (
+        #     {"context": self.retriever, "question": RunnablePassthrough()}
+        #     | post_generator_system_prompt
+        #     | self.llm
+        #     | StrOutputParser()
+        # )
         
-        response = chain.invoke(question)
+        # response = chain.invoke(question)
+        
+        text_chain = self.text_chain # title prompt + retrieval chain 선언
+        response = text_chain.invoke({'input':question})
+        # print(response)
         
         return response
+    
+    def print_text(self, question: str):
+        
+        
+        return question + question
