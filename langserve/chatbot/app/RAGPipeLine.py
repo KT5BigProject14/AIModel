@@ -181,20 +181,20 @@ class Ragpipeline(Runnable):
             print(f"[벡터 DB 삭제] 문서 ID [{doc_id}]의 임베딩을 벡터 DB에서 삭제했습니다.")
         else:
             print(f"[벡터 DB 삭제 실패] 문서 ID [{doc_id}]에 대한 임베딩을 찾을 수 없습니다.")
-            
+
     def title_generation(self, question: str):
-        
+
         chain = (
             {"context": self.retriever, "question": RunnablePassthrough()}
             | title_generator_system_prompt
             | self.llm
             | StrOutputParser()
         )
-        
+
         response = chain.invoke(question)
-        
+
         return response
-        
+
     def post_generation(self, question: str):
 
         chain = (
@@ -203,7 +203,7 @@ class Ragpipeline(Runnable):
             | self.llm
             | StrOutputParser()
         )
-        
+
         response = chain.invoke(question)
-        
+
         return response
