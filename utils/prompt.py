@@ -19,7 +19,7 @@ title_generator_system_prompt = """
 """
 
 title_generator_system_prompt = ChatPromptTemplate.from_template(
-"""제시된 질문에 연관된 블로그 게시물의 제목, title을 5개 생성해주세요. 
+"""제시된 질문에 연관된 블로그 게시물의 제목을 {num} 개 생성해주세요. 
 한국어로 대답하세요.
 
 예시)
@@ -49,6 +49,8 @@ post_generator_system_prompt = ChatPromptTemplate.from_template(
 첫번째는 게시물의 Title을 작성해주세요.
 적어도 3개 이상의 소주제와 5문단이상의 내용을 생성하여 컬럼 및 게시물을 작성해주세요. 
 한국어로 대답하세요. 모든 문장은 '~이다.', '~하다.' 형식으로 문장을 끝내세요.  
+게시물 마지막에는 어떤 자료를 근거로 게시물을 생성하였는지 참고자료의 출처를 밝히세요.
+
 
 
 #Question: 
@@ -98,6 +100,27 @@ FORMAT:
 
 qa_prompt = ChatPromptTemplate.from_messages([
     ("system", qa_system_prompt),
+    MessagesPlaceholder("chat_history"),
+    ("human", "{input}"),
+])
+
+
+# 3. Web search 질문 프롬프트
+web_qa_system_prompt = """
+당신은 질문에 대해 정보를 제공해주는 어시스턴트입니다.
+한국 Google에서 검색해서 정보를 알려주세요.
+한국어로 대답하세요. 
+
+자료:
+{context}
+
+질문:
+{input}
+
+"""
+
+web_qa_prompt = ChatPromptTemplate.from_messages([
+    ("system", web_qa_system_prompt),
     MessagesPlaceholder("chat_history"),
     ("human", "{input}"),
 ])

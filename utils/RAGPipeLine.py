@@ -3,7 +3,13 @@ import json
 
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
+from langchain.retrievers.web_research import WebResearchRetriever
+from langchain.utilities import GoogleSearchAPIWrapper
+
+
 from langchain.schema import HumanMessage, SystemMessage, Document
+
+from langchain.chains import RetrievalQAWithSourcesChain
 from langchain.chains import create_history_aware_retriever, create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_community.chat_message_histories import ChatMessageHistory
@@ -32,7 +38,7 @@ from dotenv import load_dotenv
 # API KEY 정보로드
 load_dotenv()
 
-from utils.prompt import contextualize_q_prompt, qa_prompt, title_generator_system_prompt, post_generator_system_prompt
+from utils.prompt import contextualize_q_prompt, qa_prompt, title_generator_system_prompt, post_generator_system_prompt, web_qa_prompt
 from utils.update import split_document, convert_file_to_documents
 
 # intfloat/multilingual-e5-small
@@ -89,6 +95,12 @@ class Ragpipeline:
         self.vector_store   = self.init_vectorDB()
         self.retriever      = self.init_retriever()  
         self.chain          = self.init_chat_chain()
+        self.web_retriever  = self.init_web_research_retriever()  
+        self.web_chain      = self.init_web_chat_chain()
+        
+        self.title_chain   = self.init_title_generation()
+        self.post_chain   = self.init_post_generation()
+        
         self.session_histories = {}   
         
         print(f"[초기화] vector_store 초기화 완료")
@@ -115,25 +127,90 @@ class Ragpipeline:
         )
         return retriever
     
+    def init_web_research_retriever(self):
+        """ Web Research Retriever 초기화 """            
+        search = GoogleSearchAPIWrapper()
+        # self.vector_store를 써버리면 web search한 내용이 들어가버린다. 
+        vectorstore = Chroma(embedding_function=OpenAIEmbeddings(),
+                     persist_directory="./temp_web_db")
+        web_retriever = WebResearchRetriever.from_llm(
+                    vectorstore=vectorstore, # self.vector_store,
+                    llm=self.llm , 
+                    search=search, 
+                )
+        return web_retriever
+    
     def init_chat_chain(self):
         """ chain 초기화 
         리트리버 전용 체인으로 변경해보기
         create_history_aware_retriever : 대화 기록을 가져온 다음 이를 사용하여 검색 쿼리를 생성하고 이를 기본 리트리버에 전달
         """
         
-        # 사용자의 질문 문맥화 <- 프롬프트 엔지니어링
+        # 1. 사용자의 질문 문맥화 <- 프롬프트 엔지니어링
         history_aware_retriever = create_history_aware_retriever(                           # 대화 기록을 가져온 다음 이를 사용하여 검색 쿼리를 생성하고 이를 기본 리트리버에 전달
             self.llm, self.retriever, contextualize_q_prompt
         )
         
-        # 응답 생성 + 프롬프트 엔지니어링
+        # 2. 응답 생성 + 프롬프트 엔지니어링
         question_answer_chain = create_stuff_documents_chain(self.llm, qa_prompt)           # 문서 목록을 가져와서 모두 프롬프트로 포맷한 다음 해당 프롬프트를 LLM에 전달합니다.
         
-        # 최종 체인 생성
+        # 3. 최종 체인 생성
         rag_chat_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)  # 사용자 문의를 받아 리트리버로 전달하여 관련 문서를 가져옵니다. 그런 다음 해당 문서(및 원본 입력)는 LLM으로 전달되어 응답을 생성
 
 
         return rag_chat_chain
+    
+    def init_web_chat_chain(self):
+        # 위에걸로만 해야하나?
+        # final_chain = RetrievalQAWithSourcesChain.from_chain_type(self.llm,
+        #                                                retriever=self.web_retriever )
+        
+        # rag_chat_chain = (
+        #         web_qa_system_prompt | final_chain | StrOutputParser()
+        # )
+        
+        # rag_chat_chain = (
+        #     {"context": self.web_retriever, "question": RunnablePassthrough()}
+        #     | web_qa_prompt
+        #     | self.llm
+        #     | StrOutputParser()
+        # )
+        
+        # 1. 사용자의 질문 문맥화 <- 프롬프트 엔지니어링
+        history_aware_retriever = create_history_aware_retriever(                           # 대화 기록을 가져온 다음 이를 사용하여 검색 쿼리를 생성하고 이를 기본 리트리버에 전달
+            self.llm, self.web_retriever, contextualize_q_prompt
+        )
+        
+        # 2. 응답 생성 + 프롬프트 엔지니어링
+        question_answer_chain = create_stuff_documents_chain(self.llm, web_qa_prompt)           # 문서 목록을 가져와서 모두 프롬프트로 포맷한 다음 해당 프롬프트를 LLM에 전달합니다.
+        
+        # 3. 최종 체인 생성
+        rag_chat_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)  # 사용자 문의를 받아 리트리버로 전달하여 관련 문서를 가져옵니다. 그런 다음 해당 문서(및 원본 입력)는 LLM으로 전달되어 응답을 생성
+
+
+        return rag_chat_chain
+    
+    def init_title_generation(self):
+        chain = (
+            {"context": self.retriever, "question": RunnablePassthrough(), "num": RunnablePassthrough()}
+            | title_generator_system_prompt
+            | self.llm
+            | StrOutputParser()
+        )
+        
+        return chain
+    
+    
+    def init_post_generation(self):
+        chain = (
+            {"context": self.retriever, "question": RunnablePassthrough()}
+            | post_generator_system_prompt
+            | self.llm
+            | StrOutputParser()
+        )
+        
+        return chain
+        
     
     
     def chat_generation(self, question: str, session_id: str) -> dict:
@@ -144,46 +221,41 @@ class Ragpipeline:
                 print(f"[히스토리 생성] 새로운 히스토리를 생성합니다. 세션 ID: {session_id}")
             return self.session_histories[session_id]
 
+        results = self.vector_store.similarity_search_with_score(question, k=1)
+        print(results[0][1])
+        if results[0][1] > 0.3:
+            print('제가 잘 모르는 내용이라서, 검색한 내용을 알려 드릴께요.')
+            final_chain = self.web_chain
+        else:
+            final_chain = self.chain
+        
         conversational_rag_chain = RunnableWithMessageHistory(
-            self.chain,
-            get_session_history,
-            input_messages_key="input",
-            history_messages_key="chat_history",
-            output_messages_key="answer"
-        )
+                final_chain,
+                get_session_history,
+                input_messages_key="input",
+                history_messages_key="chat_history",
+                output_messages_key="answer"
+            )
 
         response = conversational_rag_chain.invoke(
             {"input": question},
             config={"configurable": {"session_id": session_id}}
         )
 
-        print(f'[응답 생성] 실제 모델 응답: response => \n{response}\n')
-        print(f"[응답 생성] 세션 ID [{session_id}]에서 답변을 생성했습니다.")
+        # print(f'[응답 생성] 실제 모델 응답: response => \n{response}\n')
+        # print(f"[응답 생성] 세션 ID [{session_id}]에서 답변을 생성했습니다.")
 
-        return response["answer"]
+        return response # response["answer"]
     
-    def title_generation(self, question: str):
-        chain = (
-            {"context": self.retriever, "question": RunnablePassthrough()}
-            | title_generator_system_prompt
-            | self.llm
-            | StrOutputParser()
-        )
-        
-        response = chain.invoke(question)
+    def title_generation(self, num: str, question: str):
+
+        response = self.title_chain.invoke(question)
         
         return response
     
     def post_generation(self, question: str):
-
-        chain = (
-            {"context": self.retriever, "question": RunnablePassthrough()}
-            | post_generator_system_prompt
-            | self.llm
-            | StrOutputParser()
-        )
         
-        response = chain.invoke(question)
+        response = self.post_chain.invoke(question)
         
         return response
         
