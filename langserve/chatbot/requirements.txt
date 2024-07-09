@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+langchain
+openai
+chromadb
+python-dotenv
+langchain-openai
+langchain_community
+python-multipart
+langserve
+pydantic==1.10.13
