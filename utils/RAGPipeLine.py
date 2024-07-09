@@ -24,6 +24,8 @@ from langchain_core.output_parsers import StrOutputParser
 # from llama_index.core import (
 #     SimpleDirectoryReader
 # )
+from langchain.callbacks.base import BaseCallbackHandler
+
 
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.document_loaders import PyMuPDFLoader
@@ -40,6 +42,10 @@ load_dotenv()
 
 from utils.prompt import contextualize_q_prompt, qa_prompt, title_generator_system_prompt, post_generator_system_prompt, web_qa_prompt
 from utils.update import split_document, convert_file_to_documents
+
+class StreamCallback(BaseCallbackHandler):
+    def on_llm_new_token(self, token, **kwargs):
+        print(token, end="", flush=True)
 
 # intfloat/multilingual-e5-small
 config = {
@@ -90,7 +96,9 @@ class Ragpipeline:
         
         self.llm = ChatOpenAI(
             model       = config['llm_predictor']['model_name'],
-            temperature = config['llm_predictor']['temperature']
+            temperature = config['llm_predictor']['temperature'],
+            streaming=True,
+            callbacks=[StreamCallback()]
         )
         self.vector_store   = self.init_vectorDB()
         self.retriever      = self.init_retriever()  
@@ -121,10 +129,16 @@ class Ragpipeline:
     
     def init_retriever(self):
         """ Retriever 초기화 """                        # 나중에 FAISS랑 BM25와 함께 Hybrid 또는 EnsembleRetriever 적용 
+        # retriever = self.vector_store.as_retriever(
+        #     search_kwargs = {"k": config["retriever_k"]},
+        #     search_type   = "similarity"
+        # )
+        
         retriever = self.vector_store.as_retriever(
-            search_kwargs = {"k": config["retriever_k"]},
-            search_type   = "similarity"
+            search_kwargs = {"score_threshold": 0.75, "k": config["retriever_k"]},
+            search_type   = "similarity_score_threshold"
         )
+        
         return retriever
     
     def init_web_research_retriever(self):
