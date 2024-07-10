@@ -34,18 +34,6 @@ async def redirect_root_to_docs():
     return RedirectResponse("/docs")
 
 
-# @app.post("/chat")
-# async def chat(question: str, session_id: str, user_email: str):
-#     try:
-#         # Set user email and session ID before calling chat_generation
-#         ragpipe.current_user_email = user_email
-#         ragpipe.current_session_id = session_id
-#         response = ragpipe.chat_generation(question)
-#         return {"response": response}
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-
-
 @app.post("/chat", response_model=ChatResponse)
 async def chat(chat_request: ChatRequest):
     try:
@@ -55,7 +43,7 @@ async def chat(chat_request: ChatRequest):
         response = ragpipe.chat_generation(chat_request.question)
 
         # Return response and session_id
-        return JSONResponse(content={"response": response, "session_id": chat_request.session_id})
+        return ChatResponse(response=response, session_id=chat_request.session_id)
     except KeyError as e:
         raise HTTPException(status_code=400, detail=f"Missing field: {e}")
     except Exception as e:
