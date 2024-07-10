@@ -27,6 +27,7 @@ from utils.prompt import *
 from utils.redis_utils import save_message_to_redis, get_messages_from_redis
 from core.redis_config import redis_conn  # Redis 설정 임포트
 from langchain_core.runnables import RunnableParallel
+# from langchain.retrievers import WebResearchRetriever
 from langchain.retrievers.web_research import WebResearchRetriever
 # from langchain.utilities import GoogleSearchAPIWrapper
 from langchain_google_community import GoogleSearchAPIWrapper
@@ -126,7 +127,6 @@ class Ragpipeline:
         history_aware_retriever = create_history_aware_retriever(                           # 대화 기록을 가져온 다음 이를 사용하여 검색 쿼리를 생성하고 이를 기본 리트리버에 전달
             self.llm, self.web_retriever, contextualize_q_prompt
         )
-        
         # 2. 응답 생성 + 프롬프트 엔지니어링
         question_answer_chain = create_stuff_documents_chain(self.llm, web_qa_prompt)           # 문서 목록을 가져와서 모두 프롬프트로 포맷한 다음 해당 프롬프트를 LLM에 전달합니다.
         
@@ -134,6 +134,14 @@ class Ragpipeline:
         rag_chat_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)  # 사용자 문의를 받아 리트리버로 전달하여 관련 문서를 가져옵니다. 그런 다음 해당 문서(및 원본 입력)는 LLM으로 전달되어 응답을 생성
 
         return rag_chat_chain
+
+    # def init_web_chat_chain(self):
+    #     question_answer_chain = create_stuff_documents_chain(
+    #         self.llm, title_generator_prompt)
+    #     rag_title_chain = create_retrieval_chain(
+    #         self.retriever, question_answer_chain)
+    #     print("[초기화] RAG title chain 초기화 완료")
+    #     return rag_title_chain
     
     def init_title_chain(self):
         question_answer_chain = create_stuff_documents_chain(
@@ -181,22 +189,34 @@ class Ragpipeline:
                     self.session_histories[session_id].add_message(
                         HumanMessage(content=message)
                     )
-                print(
-                    f"[히스토리 생성] 새로운 히스토리를 생성합니다. 세션 ID: {session_id}, 유저: {user_email}")
+                print(f"[히스토리 생성] 새로운 히스토리]를 생성합니다. 세션 ID: {session_id}, 유저: {user_email}")
             return self.session_histories[session_id]
 
+        results = self.vector_store.similarity_search_with_score(question, k=1)
+        
+        print(results[0][1])
+        if results[0][1] > 0.2:
+            print('제가 잘 모르는 내용이라서, 검색한 내용을 알려 드릴께요.')
+            final_chain = self.web_chain
+            print("1")
+        else:
+            final_chain = self.chain
+            print("2")
+        print("3") 
         conversational_rag_chain = RunnableWithMessageHistory(
-            self.chain,
+            final_chain,
             get_session_history,
             input_messages_key="input",
             history_messages_key="chat_history",
             output_messages_key="answer"
         )
+        print("4") 
 
         response = conversational_rag_chain.invoke(
             {"input": question},
             config={"configurable": {"session_id": self.current_session_id}}
         )
+        print("5") 
 
         # Redis에 세션 히스토리 저장
         save_message_to_redis(self.current_user_email,
@@ -248,15 +268,6 @@ class Ragpipeline:
         return response
         
     def text_generation(self, question: str):
-
-        # chain = (
-        #     {"context": self.retriever, "question": RunnablePassthrough()}
-        #     | post_generator_system_prompt
-        #     | self.llm
-        #     | StrOutputParser()
-        # )
-        
-        # response = chain.invoke(question)
         
         text_chain = self.text_chain # title prompt + retrieval chain 선언
         response = text_chain.invoke({'input':question})

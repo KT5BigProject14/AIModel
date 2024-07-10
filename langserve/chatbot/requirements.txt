@@ -9,3 +9,5 @@ langchain_community
 python-multipart
 langserve
 pydantic==1.10.13
+html2text
+beautifulsoup4
