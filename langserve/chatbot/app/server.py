@@ -88,21 +88,6 @@ async def stream_log(request: Request):
     except Exception as e:
         raise HTTPException(status_code=422, detail=str(e))
     
-# @app.post("/chain/generate/title")
-# async def generate_title(request: Request):
-# # async def generate_title(request: str):
-#     # try:
-#         body = await request.json()
-#         print(body)
-#         print(body['question'])
-#         response = ragpipe.title_generation(question=body['question'])
-#         print(response)
-#         print(response.type)
-#         print(JSONResponse(content=body['question']))
-#         return JSONResponse(content=body['question'])
-#     # except Exception as e:
-#     #     raise HTTPException(status_code=422, detail=str(e))
-    
 def print_text(self, question: str):
         
     return question + question
@@ -126,30 +111,8 @@ def generate_text(request: str):
         return text
     except Exception as e:
         raise HTTPException(status_code=422, detail=str(e))
-    
-# @app.post("/chain/generate/text")
-# async def generate_text(request: Request):
-#     try:
-#         body = await request.json()
-#         input_data = body['input']
-#         user_email = input_data['user_email']
-#         session_id = input_data.get('session_id')
-#         question = input_data.get('input')
-        
-#         # response = ragpipe.invoke(
-#         #     {"input": question, "session_id": session_id, "user_email": user_email})
-#         return JSONResponse(content=response)
-#     except Exception as e:
-#         raise HTTPException(status_code=422, detail=str(e))
 
 app.include_router(redis_router, prefix="/redis")  # Redis 라우터 추가
-
-# add_routes(
-#     app,
-#     ragpipe.with_types(input_type=Input),
-#     path="/chain",
-#     playground_type="default",  # default, chat
-# )
 
 if __name__ == "__main__":
     uvicorn.run(app, host="localhost", port=8000)
