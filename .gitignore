@@ -2,6 +2,8 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=windows,visualstudiocode,python
 
 .env
+chatbot/app/database
+chatbot/database
 database
 
 ### Python ###
