@@ -62,13 +62,13 @@ class Ragpipeline:
             model=config['llm_predictor']['model_name'],
             temperature=config['llm_predictor']['temperature']
         )
-        self.vector_store   = self.init_vectorDB()
-        self.retriever      = self.init_retriever()
-        self.chain          = self.init_chat_chain()
-        self.web_retriever  = self.init_web_research_retriever()  
-        self.web_chain      = self.init_web_chat_chain()
-        self.title_chain    = self.init_title_chain()
-        self.text_chain     = self.init_text_chain()
+        self.vector_store = self.init_vectorDB()
+        self.retriever = self.init_retriever()
+        self.chain = self.init_chat_chain()
+        self.web_retriever = self.init_web_research_retriever()
+        self.web_chain = self.init_web_chat_chain()
+        self.title_chain = self.init_title_chain()
+        self.text_chain = self.init_text_chain()
         self.session_histories = {}
         self.current_user_email = None
         self.current_session_id = None
@@ -88,26 +88,27 @@ class Ragpipeline:
         #     search_kwargs={"k": config["retriever_k"]},
         #     search_type="similarity"
         # )
-        
+
         retriever = self.vector_store.as_retriever(
-            search_kwargs = {"score_threshold": 0.75, "k": config["retriever_k"]},
-            search_type   = "similarity_score_threshold"
+            search_kwargs={"score_threshold": 0.75,
+                           "k": config["retriever_k"]},
+            search_type="similarity_score_threshold"
         )
-        
+
         print(f"[초기화] retriever 초기화 완료")
         return retriever
-    
+
     def init_web_research_retriever(self):
-        """ Web Research Retriever 초기화 """            
+        """ Web Research Retriever 초기화 """
         search = GoogleSearchAPIWrapper()
-        # self.vector_store를 써버리면 web search한 내용이 들어가버린다. 
+        # self.vector_store를 써버리면 web search한 내용이 들어가버린다.
         vectorstore = Chroma(embedding_function=OpenAIEmbeddings(),
-                     persist_directory="./temp_web_db")
+                             persist_directory="./temp_web_db")
         web_retriever = WebResearchRetriever.from_llm(
-                    vectorstore=vectorstore, # self.vector_store,
-                    llm=self.llm , 
-                    search=search, 
-                )
+            vectorstore=vectorstore,  # self.vector_store,
+            llm=self.llm,
+            search=search,
+        )
         return web_retriever
 
     def init_chat_chain(self):
@@ -120,21 +121,25 @@ class Ragpipeline:
             history_aware_retriever, question_answer_chain)
         print("[초기화] RAG chain 초기화 완료")
         return rag_chat_chain
-    
+
     def init_web_chat_chain(self):
         # 1. 사용자의 질문 문맥화 <- 프롬프트 엔지니어링
         history_aware_retriever = create_history_aware_retriever(                           # 대화 기록을 가져온 다음 이를 사용하여 검색 쿼리를 생성하고 이를 기본 리트리버에 전달
             self.llm, self.web_retriever, contextualize_q_prompt
         )
-        
+
         # 2. 응답 생성 + 프롬프트 엔지니어링
-        question_answer_chain = create_stuff_documents_chain(self.llm, web_qa_prompt)           # 문서 목록을 가져와서 모두 프롬프트로 포맷한 다음 해당 프롬프트를 LLM에 전달합니다.
-        
+        # 문서 목록을 가져와서 모두 프롬프트로 포맷한 다음 해당 프롬프트를 LLM에 전달합니다.
+        question_answer_chain = create_stuff_documents_chain(
+            self.llm, web_qa_prompt)
+
         # 3. 최종 체인 생성
-        rag_chat_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)  # 사용자 문의를 받아 리트리버로 전달하여 관련 문서를 가져옵니다. 그런 다음 해당 문서(및 원본 입력)는 LLM으로 전달되어 응답을 생성
+        # 사용자 문의를 받아 리트리버로 전달하여 관련 문서를 가져옵니다. 그런 다음 해당 문서(및 원본 입력)는 LLM으로 전달되어 응답을 생성
+        rag_chat_chain = create_retrieval_chain(
+            history_aware_retriever, question_answer_chain)
 
         return rag_chat_chain
-    
+
     def init_title_chain(self):
         question_answer_chain = create_stuff_documents_chain(
             self.llm, title_generator_prompt)
@@ -143,7 +148,7 @@ class Ragpipeline:
         print("[초기화] RAG title chain 초기화 완료")
         return rag_title_chain
     # title은 post를 이용해서 만드는 것도..?
-    
+
     def init_text_chain(self):
         question_answer_chain = create_stuff_documents_chain(
             self.llm, text_generator_prompt)
@@ -240,13 +245,13 @@ class Ragpipeline:
             print(f"[벡터 DB 삭제] 문서 ID [{doc_id}]의 임베딩을 벡터 DB에서 삭제했습니다.")
         else:
             print(f"[벡터 DB 삭제 실패] 문서 ID [{doc_id}]에 대한 임베딩을 찾을 수 없습니다.")
-            
+
     def title_generation(self, question: str):
-        title_chain = self.title_chain # title prompt + retrieval chain 선언
-        response = title_chain.invoke({'input':question})
+        title_chain = self.title_chain  # title prompt + retrieval chain 선언
+        response = title_chain.invoke({'input': question})
         # print(response)
         return response
-        
+
     def text_generation(self, question: str):
 
         # chain = (
@@ -255,16 +260,15 @@ class Ragpipeline:
         #     | self.llm
         #     | StrOutputParser()
         # )
-        
+
         # response = chain.invoke(question)
-        
-        text_chain = self.text_chain # title prompt + retrieval chain 선언
-        response = text_chain.invoke({'input':question})
+
+        text_chain = self.text_chain  # title prompt + retrieval chain 선언
+        response = text_chain.invoke({'input': question})
         # print(response)
-        
+
         return response
-    
+
     def print_text(self, question: str):
-        
-        
+
         return question + question

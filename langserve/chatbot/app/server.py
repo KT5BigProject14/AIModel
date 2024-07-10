@@ -16,16 +16,18 @@ class Input(BaseModel):
     input: str
     session_id: str
     user_email: str
-    
-    
+
+
 class ChatRequest(BaseModel):
     question: str
     session_id: str
     user_email: str
-    
+
+
 class ChatResponse(BaseModel):
     response: str
-    session_id: str    
+    session_id: str
+
 
 class TitleRequest(BaseModel):
     response: str
@@ -37,16 +39,17 @@ async def redirect_root_to_docs():
 
 
 @app.post("/chat", response_model=ChatResponse)
-def chat(chat_request: ChatRequest):
+async def chat(chat_request: ChatRequest):
     try:
         # Set user email and session ID before calling chat_generation
         ragpipe.current_user_email = chat_request.user_email
         ragpipe.current_session_id = chat_request.session_id
         response = ragpipe.chat_generation(chat_request.question)
-        
-        return JSONResponse(content={"response": response, "session_id": chat_request.session_id})
+
+        # Return response and session_id
+        return ChatResponse(response=response, session_id=chat_request.session_id)
     except KeyError as e:
-        raise HTTPException(status_code=400, detail=f"Missiong field: {e}")
+        raise HTTPException(status_code=400, detail=f"Missing field: {e}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -73,6 +76,7 @@ async def delete_vector_db(doc_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.post("/chain/stream_log")
 async def stream_log(request: Request):
     try:
@@ -87,26 +91,13 @@ async def stream_log(request: Request):
         return JSONResponse(content=response)
     except Exception as e:
         raise HTTPException(status_code=422, detail=str(e))
-    
-# @app.post("/chain/generate/title")
-# async def generate_title(request: Request):
-# # async def generate_title(request: str):
-#     # try:
-#         body = await request.json()
-#         print(body)
-#         print(body['question'])
-#         response = ragpipe.title_generation(question=body['question'])
-#         print(response)
-#         print(response.type)
-#         print(JSONResponse(content=body['question']))
-#         return JSONResponse(content=body['question'])
-#     # except Exception as e:
-#     #     raise HTTPException(status_code=422, detail=str(e))
-    
+
+
 def print_text(self, question: str):
-        
+
     return question + question
-    
+
+
 @app.post("/chain/generate/title")
 def generate_title(request: str):
     try:
@@ -116,7 +107,8 @@ def generate_title(request: str):
         return title
     except Exception as e:
         raise HTTPException(status_code=422, detail=str(e))
-    
+
+
 @app.post("/chain/generate/text")
 def generate_text(request: str):
     try:
@@ -126,7 +118,7 @@ def generate_text(request: str):
         return text
     except Exception as e:
         raise HTTPException(status_code=422, detail=str(e))
-    
+
 # @app.post("/chain/generate/text")
 # async def generate_text(request: Request):
 #     try:
@@ -135,12 +127,13 @@ def generate_text(request: str):
 #         user_email = input_data['user_email']
 #         session_id = input_data.get('session_id')
 #         question = input_data.get('input')
-        
+
 #         # response = ragpipe.invoke(
 #         #     {"input": question, "session_id": session_id, "user_email": user_email})
 #         return JSONResponse(content=response)
 #     except Exception as e:
 #         raise HTTPException(status_code=422, detail=str(e))
+
 
 app.include_router(redis_router, prefix="/redis")  # Redis 라우터 추가
 
@@ -152,4 +145,4 @@ app.include_router(redis_router, prefix="/redis")  # Redis 라우터 추가
 # )
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="localhost", port=8000)
+    uvicorn.run(app, host="localhost", port=8080)
