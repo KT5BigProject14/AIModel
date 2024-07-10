@@ -27,6 +27,7 @@ from utils.prompt import *
 from utils.redis_utils import save_message_to_redis, get_messages_from_redis
 from core.redis_config import redis_conn  # Redis 설정 임포트
 from langchain_core.runnables import RunnableParallel
+# from langchain.retrievers import WebResearchRetriever
 from langchain.retrievers.web_research import WebResearchRetriever
 # from langchain.utilities import GoogleSearchAPIWrapper
 from langchain_google_community import GoogleSearchAPIWrapper
@@ -187,21 +188,34 @@ class Ragpipeline:
                         HumanMessage(content=message)
                     )
                 print(
-                    f"[히스토리 생성] 새로운 히스토리를 생성합니다. 세션 ID: {session_id}, 유저: {user_email}")
+                    f"[히스토리 생성] 새로운 히스토리]를 생성합니다. 세션 ID: {session_id}, 유저: {user_email}")
             return self.session_histories[session_id]
 
+        results = self.vector_store.similarity_search_with_score(question, k=1)
+
+        print(results[0][1])
+        if results[0][1] > 0.2:
+            print('제가 잘 모르는 내용이라서, 검색한 내용을 알려 드릴께요.')
+            final_chain = self.web_chain
+            print("1")
+        else:
+            final_chain = self.chain
+            print("2")
+        print("3")
         conversational_rag_chain = RunnableWithMessageHistory(
-            self.chain,
+            final_chain,
             get_session_history,
             input_messages_key="input",
             history_messages_key="chat_history",
             output_messages_key="answer"
         )
+        print("4")
 
         response = conversational_rag_chain.invoke(
             {"input": question},
             config={"configurable": {"session_id": self.current_session_id}}
         )
+        print("5")
 
         # Redis에 세션 히스토리 저장
         save_message_to_redis(self.current_user_email,
@@ -253,15 +267,6 @@ class Ragpipeline:
         return response
 
     def text_generation(self, question: str):
-
-        # chain = (
-        #     {"context": self.retriever, "question": RunnablePassthrough()}
-        #     | post_generator_system_prompt
-        #     | self.llm
-        #     | StrOutputParser()
-        # )
-
-        # response = chain.invoke(question)
 
         text_chain = self.text_chain  # title prompt + retrieval chain 선언
         response = text_chain.invoke({'input': question})
