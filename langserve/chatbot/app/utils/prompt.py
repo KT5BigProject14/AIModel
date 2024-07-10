@@ -144,3 +144,24 @@ qa_prompt = ChatPromptTemplate.from_messages([
     MessagesPlaceholder("chat_history"),
     ("human", "{input}"),
 ])
+
+# Web search 질문 프롬프트
+
+web_qa_system_prompt = """
+당신은 질문에 대해 정보를 제공해주는 어시스턴트입니다.
+한국 Google에서 검색해서 정보를 알려주세요.
+한국어로 대답하세요. 
+
+자료:
+{context}
+
+질문:
+{input}
+
+"""
+
+web_qa_prompt = ChatPromptTemplate.from_messages([
+    ("system", web_qa_system_prompt),
+    MessagesPlaceholder("chat_history"),
+    ("human", "{input}"),
+])

@@ -144,12 +144,12 @@ def generate_text(request: str):
 
 app.include_router(redis_router, prefix="/redis")  # Redis 라우터 추가
 
-add_routes(
-    app,
-    ragpipe.with_types(input_type=Input),
-    path="/chain",
-    playground_type="default",  # default, chat
-)
+# add_routes(
+#     app,
+#     ragpipe.with_types(input_type=Input),
+#     path="/chain",
+#     playground_type="default",  # default, chat
+# )
 
 if __name__ == "__main__":
     uvicorn.run(app, host="localhost", port=8000)
