@@ -128,7 +128,6 @@ class Ragpipeline:
         history_aware_retriever = create_history_aware_retriever(                           # 대화 기록을 가져온 다음 이를 사용하여 검색 쿼리를 생성하고 이를 기본 리트리버에 전달
             self.llm, self.web_retriever, contextualize_q_prompt
         )
-
         # 2. 응답 생성 + 프롬프트 엔지니어링
         # 문서 목록을 가져와서 모두 프롬프트로 포맷한 다음 해당 프롬프트를 LLM에 전달합니다.
         question_answer_chain = create_stuff_documents_chain(
@@ -140,6 +139,14 @@ class Ragpipeline:
             history_aware_retriever, question_answer_chain)
 
         return rag_chat_chain
+
+    # def init_web_chat_chain(self):
+    #     question_answer_chain = create_stuff_documents_chain(
+    #         self.llm, title_generator_prompt)
+    #     rag_title_chain = create_retrieval_chain(
+    #         self.retriever, question_answer_chain)
+    #     print("[초기화] RAG title chain 초기화 완료")
+    #     return rag_title_chain
 
     def init_title_chain(self):
         question_answer_chain = create_stuff_documents_chain(
@@ -157,22 +164,6 @@ class Ragpipeline:
             self.retriever, question_answer_chain)
         print("[초기화] RAG post chain 초기화 완료")
         return rag_text_chain
-
-    # def invoke(self, input, config=None, **kwargs):
-    #     self.current_user_email = input["user_email"]
-    #     self.current_session_id = input.get("session_id", "default_session")
-    #     question = input["input"]
-    #     try:
-    #         answer = self.chat_generation(question)
-    #         response = {
-    #             "output": answer,
-    #             "metadata": {"source": "RAGPipeline"}
-    #         }
-    #         print(f"Server response: {response}")
-    #         return response
-    #     except Exception as e:
-    #         print(f"Error in invoke method: {e}")
-    #         raise
 
     def chat_generation(self, question: str) -> dict:
         def get_session_history(session_id=None, user_email=None):
