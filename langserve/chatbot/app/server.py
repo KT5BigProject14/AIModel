@@ -65,8 +65,7 @@ async def generate_title(title_request: TitleRequest):
         # print(f"수신된 데이터: {title_request}")
 
         title = ragpipe.title_generation(title_request.request)
-        # print(f"생성된 제목: {title['answer']}")
-
+        print(title['answer'])
         return TitleResponse(response=title['answer'])
     except KeyError as e:
         raise HTTPException(status_code=400, detail=f"Missing field: {e}")
@@ -79,12 +78,17 @@ def generate_text(text_request: TextRequest):
     try:
         # print(f"수신된 데이터: {text_request}")
         text = ragpipe.text_generation(text_request.title)
+
+        if 'answer' not in text:
+            raise KeyError('answer')
+
         print(text['answer'])
         return TextResponse(response=text['answer'])
     except KeyError as e:
         raise HTTPException(status_code=400, detail=f"Missing field: {e}")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=500, detail=f"An unexpected error occurred: {e}")
 
 
 @app.post("/update-vector-db")
