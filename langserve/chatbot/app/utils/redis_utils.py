@@ -38,6 +38,7 @@ def scan_keys(user_email: str):
         session_id = parts[3]
         message = redis_conn.lrange(key, 1, 1)
         if message:
+            messages.append(session_id)
             messages.append(message[0].decode('utf-8'))
     return all_messagesResponse(messages=messages)
 
