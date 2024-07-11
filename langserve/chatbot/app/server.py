@@ -79,9 +79,6 @@ def generate_text(text_request: TextRequest):
         # print(f"수신된 데이터: {text_request}")
         text = ragpipe.text_generation(text_request.title)
 
-        if 'answer' not in text:
-            raise KeyError('answer')
-
         print(text['answer'])
         return TextResponse(response=text['answer'])
     except KeyError as e:
