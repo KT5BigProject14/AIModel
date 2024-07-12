@@ -32,6 +32,16 @@ from langchain.retrievers.web_research import WebResearchRetriever
 # from langchain.utilities import GoogleSearchAPIWrapper
 from langchain_google_community import GoogleSearchAPIWrapper
 
+# Retriever 기법 
+from langchain.retrievers.multi_query import MultiQueryRetriever
+from langchain.retrievers.self_query.base import SelfQueryRetriever
+from langchain.retrievers import ParentDocumentRetriever
+
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.storage import InMemoryStore
+
+from langchain.chains.query_constructor.base import AttributeInfo
+
 load_dotenv()
 
 config = {
@@ -56,6 +66,41 @@ config = {
 }
 
 
+metadata_field_info = [
+    AttributeInfo(
+        name="category",
+        description="The category of the documents. One of ['1.법률 및 규제', '2.경제 및 시장 분석', '3.정책 및 무역', '4.컨퍼런스 및 박람회, 전시회']",
+        type="string",
+    ),
+    AttributeInfo(
+        name="subcategory", 
+        description="The Table of Contents of the documents.", 
+        type="string"
+    ),
+    AttributeInfo(
+        name="filename",
+        description="The name of the document",
+        type="string",
+    ),
+    AttributeInfo(
+        name="page_no",
+        description="The page of the document",
+        type="int",
+    ),
+    AttributeInfo(
+        name="datetimes",
+        description="The Date the document was uploaded",
+        type="string",
+    ),
+    
+    AttributeInfo(
+        name="keyword", 
+        description="Keywords in the content", 
+        type="string"
+    ),
+]
+
+
 class Ragpipeline:
     def __init__(self):
         self.SIMILARITY_THRESHOLD = config["similarity_k"]
@@ -67,7 +112,13 @@ class Ragpipeline:
         self.retriever      = self.init_retriever()
         self.chain          = self.init_chat_chain()
         self.web_retriever  = self.init_web_research_retriever()  
+        self.mq_retriever   = self.init_multi_query_retriever()
+        self.sq_retriever   = self.init_self_query_retriever()
+        self.pd_retriever   = self.init_parent_document_retriever()
         self.web_chain      = self.init_web_chat_chain()
+        self.mq_chain      = self.init_mq_chat_chain()
+        self.sq_chain      = self.init_sq_chat_chain()
+        self.pd_chain      = self.init_pd_chat_chain()
         self.title_chain    = self.init_title_chain()
         self.text_chain     = self.init_text_chain()
         self.session_histories = {}
@@ -110,6 +161,43 @@ class Ragpipeline:
                     search=search, 
                 )
         return web_retriever
+    
+    def init_multi_query_retriever(self):
+        """사용자의 질문을 여러 개의 유사 질문으로 재생성 """
+        retriever_from_llm = MultiQueryRetriever.from_llm(
+            retriever=self.retriever, llm=self.llm
+        )
+        
+        return retriever_from_llm
+    
+    def init_self_query_retriever(self):
+        """metadata를 이용해서 필터링해서 정보를 반환"""
+        document_content_description = "Brief summary or Report or Explain"
+        retriever = SelfQueryRetriever.from_llm(
+            self.llm,
+            self.vector_store,
+            document_content_description,
+            metadata_field_info,
+            verbose = True
+        )
+        
+        return retriever
+    
+    def init_parent_document_retriever(self):
+        """청크 유사도를 통해 원본 Document-즉, Parent Document를 모두 참고하는 방법"""
+        parent_splitter = RecursiveCharacterTextSplitter(chunk_size=800)        # 280 
+        child_splitter = RecursiveCharacterTextSplitter(chunk_size=200)
+        store = InMemoryStore()
+        
+        retriever = ParentDocumentRetriever(
+            vectorstore=self.vector_store,
+            docstore=store,
+            child_splitter=child_splitter,
+            parent_splitter=parent_splitter,
+        )
+        
+        return retriever
+    
 
     def init_chat_chain(self):
         history_aware_retriever = create_history_aware_retriever(
@@ -134,6 +222,47 @@ class Ragpipeline:
         rag_chat_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)  # 사용자 문의를 받아 리트리버로 전달하여 관련 문서를 가져옵니다. 그런 다음 해당 문서(및 원본 입력)는 LLM으로 전달되어 응답을 생성
 
         return rag_chat_chain
+    
+    def init_mq_chat_chain(self):
+        # 1. 사용자의 질문 문맥화 <- 프롬프트 엔지니어링
+        history_aware_retriever = create_history_aware_retriever(                           # 대화 기록을 가져온 다음 이를 사용하여 검색 쿼리를 생성하고 이를 기본 리트리버에 전달
+            self.llm, self.mq_retriever, contextualize_q_prompt
+        )
+        # 2. 응답 생성 + 프롬프트 엔지니어링
+        question_answer_chain = create_stuff_documents_chain(self.llm, web_qa_prompt)           # 문서 목록을 가져와서 모두 프롬프트로 포맷한 다음 해당 프롬프트를 LLM에 전달합니다.
+        
+        # 3. 최종 체인 생성
+        rag_chat_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)  # 사용자 문의를 받아 리트리버로 전달하여 관련 문서를 가져옵니다. 그런 다음 해당 문서(및 원본 입력)는 LLM으로 전달되어 응답을 생성
+
+        return rag_chat_chain
+    
+    def init_sq_chat_chain(self):
+        # 1. 사용자의 질문 문맥화 <- 프롬프트 엔지니어링
+        history_aware_retriever = create_history_aware_retriever(                           # 대화 기록을 가져온 다음 이를 사용하여 검색 쿼리를 생성하고 이를 기본 리트리버에 전달
+            self.llm, self.sq_retriever, contextualize_q_prompt
+        )
+        # 2. 응답 생성 + 프롬프트 엔지니어링
+        question_answer_chain = create_stuff_documents_chain(self.llm, web_qa_prompt)           # 문서 목록을 가져와서 모두 프롬프트로 포맷한 다음 해당 프롬프트를 LLM에 전달합니다.
+        
+        # 3. 최종 체인 생성
+        rag_chat_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)  # 사용자 문의를 받아 리트리버로 전달하여 관련 문서를 가져옵니다. 그런 다음 해당 문서(및 원본 입력)는 LLM으로 전달되어 응답을 생성
+
+        return rag_chat_chain
+    
+    def init_pd_chat_chain(self):
+        # 1. 사용자의 질문 문맥화 <- 프롬프트 엔지니어링
+        history_aware_retriever = create_history_aware_retriever(                           # 대화 기록을 가져온 다음 이를 사용하여 검색 쿼리를 생성하고 이를 기본 리트리버에 전달
+            self.llm, self.pd_retriever, contextualize_q_prompt
+        )
+        # 2. 응답 생성 + 프롬프트 엔지니어링
+        question_answer_chain = create_stuff_documents_chain(self.llm, web_qa_prompt)           # 문서 목록을 가져와서 모두 프롬프트로 포맷한 다음 해당 프롬프트를 LLM에 전달합니다.
+        
+        # 3. 최종 체인 생성
+        rag_chat_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)  # 사용자 문의를 받아 리트리버로 전달하여 관련 문서를 가져옵니다. 그런 다음 해당 문서(및 원본 입력)는 LLM으로 전달되어 응답을 생성
+
+        return rag_chat_chain
+    
+    
 
     # def init_web_chat_chain(self):
     #     question_answer_chain = create_stuff_documents_chain(
@@ -176,7 +305,7 @@ class Ragpipeline:
     #         print(f"Error in invoke method: {e}")
     #         raise
 
-    def chat_generation(self, question: str) -> dict:
+    def chat_generation(self, question: str, retrieval_method) -> dict:
         def get_session_history(session_id=None, user_email=None):
             session_id = session_id if session_id else self.current_session_id
             user_email = user_email if user_email else self.current_user_email
@@ -192,17 +321,32 @@ class Ragpipeline:
                 print(f"[히스토리 생성] 새로운 히스토리]를 생성합니다. 세션 ID: {session_id}, 유저: {user_email}")
             return self.session_histories[session_id]
 
+        print(1)
         results = self.vector_store.similarity_search_with_score(question, k=1)
         
         print(results[0][1])
-        if results[0][1] > 0.2:
-            print('제가 잘 모르는 내용이라서, 검색한 내용을 알려 드릴께요.')
+        if results[0][1] > 0.3: # web chain
+            print('제가 잘 모르는 내용이라서, 검색한 내용을 알려 드릴게요.')
             final_chain = self.web_chain
-            print("1")
+        elif retrieval_method == 'mq':
+                print('mq')
+                final_chain = self.init_mq_chat_chain()
+        elif retrieval_method == 'sq':
+            print('sq')
+            final_chain = self.init_sq_chat_chain() 
+        elif retrieval_method == 'pd':
+            print('pd')
+            final_chain = self.init_pd_chat_chain()
+        else:
+            print('default')
+            final_chain = self.chain
+        
+        if results[0][1] > 0.3: # web chain
+            print('제가 잘 모르는 내용이라서, 검색한 내용을 알려 드릴게요.')
+            final_chain = self.web_chain
         else:
             final_chain = self.chain
-            print("2")
-        print("3") 
+            
         conversational_rag_chain = RunnableWithMessageHistory(
             final_chain,
             get_session_history,
@@ -210,13 +354,10 @@ class Ragpipeline:
             history_messages_key="chat_history",
             output_messages_key="answer"
         )
-        print("4") 
-
         response = conversational_rag_chain.invoke(
             {"input": question},
             config={"configurable": {"session_id": self.current_session_id}}
         )
-        print("5") 
 
         # Redis에 세션 히스토리 저장
         save_message_to_redis(self.current_user_email,
@@ -226,8 +367,10 @@ class Ragpipeline:
 
         print(f'[응답 생성] 실제 모델 응답: response => \n{response}\n')
         print(response["answer"])
-        print(type(response["answer"]))
         return response["answer"]
+    
+    
+    
 
     def update_vector_db(self, file, filename) -> bool:
         upload_documents = convert_file_to_documents(file)

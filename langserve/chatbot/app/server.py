@@ -22,6 +22,7 @@ class ChatRequest(BaseModel):
     question: str
     session_id: str
     user_email: str
+    retrieval_method: str
     
 class ChatResponse(BaseModel):
     response: str
@@ -42,7 +43,7 @@ def chat(chat_request: ChatRequest):
         # Set user email and session ID before calling chat_generation
         ragpipe.current_user_email = chat_request.user_email
         ragpipe.current_session_id = chat_request.session_id
-        response = ragpipe.chat_generation(chat_request.question)
+        response = ragpipe.chat_generation(chat_request.question, chat_request.retrieval_method)
         
         return JSONResponse(content={"response": response, "session_id": chat_request.session_id})
     except KeyError as e:
