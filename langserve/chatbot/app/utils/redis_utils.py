@@ -3,6 +3,7 @@ from core.redis_config import redis_conn
 
 from pydantic import BaseModel
 from typing import List
+import datetime
 
 
 def get_redis_session_key(user_email: str, session_id: str) -> str:
@@ -11,7 +12,9 @@ def get_redis_session_key(user_email: str, session_id: str) -> str:
 
 def save_message_to_redis(user_email: str, session_id: str, message: str):
     key = get_redis_session_key(user_email, session_id)
-    redis_conn.lpush(key, message)
+    current_time = datetime.datetime.now().strftime('%Y.%m.%d %H:%M:%S')
+    message_with_time = f"{current_time} - {message}"
+    redis_conn.lpush(key, message_with_time)
 
 
 def get_messages_from_redis(user_email: str, session_id: str, start: int = 0, end: int = -1):
