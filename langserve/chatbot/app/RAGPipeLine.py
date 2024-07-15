@@ -42,6 +42,12 @@ from langchain.storage import InMemoryStore
 
 from langchain.chains.query_constructor.base import AttributeInfo
 
+# Ensemble retriever 
+from langchain.retrievers import EnsembleRetriever
+from langchain_community.retrievers import BM25Retriever
+import pickle
+
+
 load_dotenv()
 
 config = {
@@ -62,7 +68,7 @@ config = {
     "search_type": "similarity",
     "ensemble_search_type": "mmr",
     "similarity_k": 0.25,
-    "retriever_k": 5,
+    "retriever_k": 10,
 }
 
 
@@ -116,11 +122,14 @@ class Ragpipeline:
         self.sq_retriever   = self.init_self_query_retriever()
         self.pd_retriever   = self.init_parent_document_retriever()
         self.web_chain      = self.init_web_chat_chain()
-        self.mq_chain      = self.init_mq_chat_chain()
-        self.sq_chain      = self.init_sq_chat_chain()
-        self.pd_chain      = self.init_pd_chat_chain()
+        self.mq_chain       = self.init_mq_chat_chain()
+        self.sq_chain       = self.init_sq_chat_chain()
+        self.pd_chain       = self.init_pd_chat_chain()
         self.title_chain    = self.init_title_chain()
         self.text_chain     = self.init_text_chain()
+        self.bm25_retriever = self.init_bm25_retriever()
+        self.ensemble_retriever = self.init_ensemble_retriever()
+        self.ensemble_chain = self.init_ensemble_chain()
         self.session_histories = {}
         self.current_user_email = None
         self.current_session_id = None
@@ -136,18 +145,46 @@ class Ragpipeline:
         return vector_store
 
     def init_retriever(self):
-        # retriever = self.vector_store.as_retriever(
-        #     search_kwargs={"k": config["retriever_k"]},
-        #     search_type="similarity"
-        # )
         
         retriever = self.vector_store.as_retriever(
             search_kwargs = {"score_threshold": 0.75, "k": config["retriever_k"]},
-            search_type   = "similarity_score_threshold"
+            search_type   = "mmr", # "similarity_score_threshold"
         )
         
         print(f"[초기화] retriever 초기화 완료")
         return retriever
+    
+    def init_bm25_retriever(self):
+        
+        with open('./database/all_docs.pkl', 'rb') as file:
+            all_docs = pickle.load(file)
+            
+        bm25_retriever = BM25Retriever.from_documents(
+            all_docs
+        )
+        bm25_retriever.k = 10
+        
+        print(f"[초기화] bm25 retriever 초기화 완료")
+        return bm25_retriever
+    
+    def init_ensemble_retriever(self):
+        
+        retriever = self.vector_store.as_retriever(
+            search_kwargs = {"score_threshold": 0.75, "k": config["retriever_k"]},
+            search_type   = "mmr", # "similarity_score_threshold"
+        )
+        
+        bm25_retriever = self.bm25_retriever
+        chroma_retriever = self.retriever
+        
+        ensemble_retriever = EnsembleRetriever(
+            retrievers=[bm25_retriever, chroma_retriever],
+            weights=[0.65, 0.35],
+            search_type=config["ensemble_search_type"], # mmr
+        )
+        
+        print(f"[초기화] ensemble_retriever 초기화 완료")
+        return ensemble_retriever
     
     def init_web_research_retriever(self):
         """ Web Research Retriever 초기화 """            
@@ -207,7 +244,7 @@ class Ragpipeline:
             self.llm, qa_prompt)
         rag_chat_chain = create_retrieval_chain(
             history_aware_retriever, question_answer_chain)
-        print("[초기화] RAG chain 초기화 완료")
+        print("[갱신] RAG chain history 갱신 완료")
         return rag_chat_chain
     
     def init_web_chat_chain(self):
@@ -262,15 +299,17 @@ class Ragpipeline:
 
         return rag_chat_chain
     
-    
-
-    # def init_web_chat_chain(self):
-    #     question_answer_chain = create_stuff_documents_chain(
-    #         self.llm, title_generator_prompt)
-    #     rag_title_chain = create_retrieval_chain(
-    #         self.retriever, question_answer_chain)
-    #     print("[초기화] RAG title chain 초기화 완료")
-    #     return rag_title_chain
+    def init_ensemble_chain(self):
+        
+        history_aware_retriever = create_history_aware_retriever(
+            self.llm, self.ensemble_retriever, contextualize_q_prompt
+        )
+        question_answer_chain = create_stuff_documents_chain(
+            self.llm, qa_prompt)
+        rag_chat_chain = create_retrieval_chain(
+            history_aware_retriever, question_answer_chain)
+        print("[갱신] ensemble RAG chain history 갱신 완료")
+        return rag_chat_chain
     
     def init_title_chain(self):
         question_answer_chain = create_stuff_documents_chain(
@@ -289,21 +328,6 @@ class Ragpipeline:
         print("[초기화] RAG post chain 초기화 완료")
         return rag_text_chain
 
-    # def invoke(self, input, config=None, **kwargs):
-    #     self.current_user_email = input["user_email"]
-    #     self.current_session_id = input.get("session_id", "default_session")
-    #     question = input["input"]
-    #     try:
-    #         answer = self.chat_generation(question)
-    #         response = {
-    #             "output": answer,
-    #             "metadata": {"source": "RAGPipeline"}
-    #         }
-    #         print(f"Server response: {response}")
-    #         return response
-    #     except Exception as e:
-    #         print(f"Error in invoke method: {e}")
-    #         raise
 
     def chat_generation(self, question: str, retrieval_method) -> dict:
         def get_session_history(session_id=None, user_email=None):
@@ -321,7 +345,6 @@ class Ragpipeline:
                 print(f"[히스토리 생성] 새로운 히스토리]를 생성합니다. 세션 ID: {session_id}, 유저: {user_email}")
             return self.session_histories[session_id]
 
-        print(1)
         results = self.vector_store.similarity_search_with_score(question, k=1)
         
         print(results[0][1])
@@ -337,6 +360,9 @@ class Ragpipeline:
         elif retrieval_method == 'pd':
             print('pd')
             final_chain = self.init_pd_chat_chain()
+        elif retrieval_method == 'en':
+            print('ensemble')
+            final_chain = self.init_ensemble_chain()
         else:
             print('default')
             final_chain = self.chain
@@ -417,8 +443,3 @@ class Ragpipeline:
         # print(response)
         
         return response
-    
-    def print_text(self, question: str):
-        
-        
-        return question + question

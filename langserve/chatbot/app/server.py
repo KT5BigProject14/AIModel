@@ -22,7 +22,7 @@ class ChatRequest(BaseModel):
     question: str
     session_id: str
     user_email: str
-    retrieval_method: str
+    retrieval_method_mq_sq_pd_en: str
     
 class ChatResponse(BaseModel):
     response: str
