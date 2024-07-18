@@ -3,7 +3,7 @@ fastapi
 uvicorn
 langchain
 openai
-chromadb
+chromadb==0.5.3 
 python-dotenv
 langchain-openai
 langchain_community
@@ -14,3 +14,5 @@ html2text
 beautifulsoup4
 redis
 langchain_google_community
+lark
+rank_bm25
