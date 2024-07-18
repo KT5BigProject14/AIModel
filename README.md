@@ -14,9 +14,9 @@ pip install -r requirements.txt
 ```
 
 
-### env. 넣기
+#### env. 넣기
 
-### /langserve/chatbot/app/database 에 chromadb 전체 집어넣기
+#### /langserve/chatbot/app/database 에 chromadb 전체 집어넣기
 
 ```bash
 cd app
