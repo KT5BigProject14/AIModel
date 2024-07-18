@@ -1,7 +1,7 @@
 # 사용법
 
 
-## == terminal ==
+## terminal
 
 ```bash
 conda create -n (환경_이름) python=3.11.9
@@ -26,9 +26,9 @@ uvicorn server:app --host localhost --port 8080 --reload
 ```
 
 
-## == swagger == 
+## swagger
 
-
+```bash
 = chat == # output : answer
 
 "query" : 질문
@@ -48,7 +48,7 @@ uvicorn server:app --host localhost --port 8080 --reload
 = text == # output : title 기반 text content 3 ~ 5개
 
 "query" : 질문
-
+```
 
 
 ### data team은 RAGPipeLine.py -> def chat_generation() 부분 마지막 print(response) 주석 해제해야 참조 context 확인 가능합니다.
