@@ -3,10 +3,14 @@
 환경설정(requirements.txt)
 
 == terminal ==
+
+
 cd langserve/AImodel/chat/app
 uvicorn server:app --host 0.0.0.0 --port 8080 --reload
 
+
 == swagger == 
+
 chat == # output : answer
 "query" : 질문
 "session_id": 세션 아이디,
