@@ -9,7 +9,7 @@
 
 3. cd langserve/AImodel/chat/
 
-4. pip install -r requirements.txt
+4. ''' pip install -r requirements.txt '''
 
 5. env. 넣기
 
