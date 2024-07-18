@@ -11,12 +11,10 @@ app = FastAPI()
 # Initialize RAGPipeline
 ragpipe = Ragpipeline()
 
-
 class Input(BaseModel):
     input: str
     session_id: str
     user_email: str
-    
     
 class ChatRequest(BaseModel):
     question: str

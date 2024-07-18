@@ -108,7 +108,7 @@ class Ragpipeline:
         ensemble_retriever = EnsembleRetriever(
             retrievers=[bm25_retriever, chroma_retriever],
             weights=[0.5, 0.5],
-            search_type=config["ensemble_search_type"], # mmr
+            search_type=config["ensemble_search_type"],
         )
         
         return ensemble_retriever
@@ -174,7 +174,6 @@ class Ragpipeline:
         rag_title_chain = create_retrieval_chain(
             self.retriever, question_answer_chain)
         return rag_title_chain
-    # title은 post를 이용해서 만드는 것도..?
     
     def init_text_chain(self):
         question_answer_chain = create_stuff_documents_chain(
@@ -188,6 +187,7 @@ class Ragpipeline:
         def get_session_history(session_id=None, user_email=None):
             session_id = session_id if session_id else self.current_session_id
             user_email = user_email if user_email else self.current_user_email
+            
             if session_id not in self.session_histories:
                 self.session_histories[session_id] = ChatMessageHistory()
                 # Redis에서 세션 히스토리 불러오기
@@ -197,16 +197,13 @@ class Ragpipeline:
                     self.session_histories[session_id].add_message(
                         HumanMessage(content=message)
                     )
-                print(f"[히스토리 생성] 새로운 히스토리]를 생성합니다. 세션 ID: {session_id}, 유저: {user_email}")
             return self.session_histories[session_id]
 
         results = self.vector_store.similarity_search_with_score(question, k=1)
         
         if results[0][1] > 0.3: # web chain
-            print('제가 잘 모르는 내용이라서, 검색한 내용을 알려 드릴게요.')
             final_chain = self.web_chain
         else:
-            print('mq_ensemble')
             final_chain = self.init_mq_ensemble_chain()
         
         conversational_rag_chain = RunnableWithMessageHistory(
