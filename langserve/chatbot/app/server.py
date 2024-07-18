@@ -44,7 +44,7 @@ def chat(chat_request: ChatRequest):
         ragpipe.current_session_id = chat_request.session_id
         response = ragpipe.chat_generation(chat_request.question)
         
-        return JSONResponse(content={"response": response, "session_id": chat_request.session_id})
+        return JSONResponse(content={"response": response["answer"], "session_id": chat_request.session_id})
     except KeyError as e:
         raise HTTPException(status_code=400, detail=f"Missiong field: {e}")
     except Exception as e:
@@ -144,12 +144,6 @@ def generate_text(request: str):
 
 app.include_router(redis_router, prefix="/redis")  # Redis 라우터 추가
 
-add_routes(
-    app,
-    ragpipe.with_types(input_type=Input),
-    path="/chain",
-    playground_type="default",  # default, chat
-)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="localhost", port=8000)
