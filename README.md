@@ -1,5 +1,6 @@
 사용법
 
+env. 넣기
 환경설정(requirements.txt)
 
 == terminal ==
