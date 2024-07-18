@@ -51,4 +51,4 @@ uvicorn server:app --host localhost --port 8080 --reload
 ```
 
 
-### data team은 RAGPipeLine.py -> def chat_generation() 부분 마지막 print(response) 주석 해제해야 참조 context 확인 가능합니다.
+#### data team은 RAGPipeLine.py -> def chat_generation() 부분 마지막 print(response) 주석 해제해야 참조 context 확인 가능합니다.
