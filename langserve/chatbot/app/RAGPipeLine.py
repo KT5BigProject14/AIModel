@@ -42,20 +42,6 @@ from langchain.storage import InMemoryStore
 from langchain.retrievers import EnsembleRetriever
 from langchain_community.retrievers import BM25Retriever
 import pickle
-# from langchain.retrievers import WebResearchRetriever
-from langchain.retrievers.web_research import WebResearchRetriever
-# from langchain.utilities import GoogleSearchAPIWrapper
-from langchain_google_community import GoogleSearchAPIWrapper
-# Retriever 기법
-from langchain.retrievers.multi_query import MultiQueryRetriever
-from langchain.retrievers.self_query.base import SelfQueryRetriever
-from langchain.retrievers import ParentDocumentRetriever
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.storage import InMemoryStore
-# Ensemble retriever
-from langchain.retrievers import EnsembleRetriever
-from langchain_community.retrievers import BM25Retriever
-import pickle
 
 load_dotenv()
 
@@ -199,22 +185,6 @@ class Ragpipeline:
         rag_text_chain = create_retrieval_chain(
             self.retriever, question_answer_chain)
         return rag_text_chain
-
-    def invoke(self, input, config=None, **kwargs):
-        self.current_user_email = input["user_email"]
-        self.current_session_id = input.get("session_id", "default_session")
-        question = input["input"]
-        try:
-            answer = self.chat_generation(question)
-            response = {
-                "output": answer,
-                "metadata": {"source": "RAGPipeline"}
-            }
-            print(f"Server response: {response}")
-            return response
-        except Exception as e:
-            print(f"Error in invoke method: {e}")
-            raise
 
     def chat_generation(self, question: str) -> dict:
         def get_session_history(session_id=None, user_email=None):
