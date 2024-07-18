@@ -9,17 +9,20 @@
 
 3. cd langserve/AImodel/chat/
 
-4. """ pip install -r requirements.txt """
+4.
+"""
+pip install -r requirements.txt
+"""
 
-5. env. 넣기
+7. env. 넣기
 
-6. /langserve/chatbot/app/database 에 chromadb 전체 집어넣기
+8. /langserve/chatbot/app/database 에 chromadb 전체 집어넣기
 
-7. cd app
+9. cd app
 
-8. uvicorn server:app --host 0.0.0.0 --port 8080 --reload
+10. uvicorn server:app --host 0.0.0.0 --port 8080 --reload
 
-9. url : (http://localhost:8080/docs)
+11. url : (http://localhost:8080/docs)
 
 
 ### == swagger == 
