@@ -1,29 +1,28 @@
 ## 사용법
 
 
-== terminal ==
-환경설정
-conda create -n (환경_이름) python=3.11.9
+### == terminal ==
 
-conda activate (환경_이름)
+1. conda create -n (환경_이름) python=3.11.9
 
-cd langserve/AImodel/chat/
+2. conda activate (환경_이름)
 
-pip install -r requirements.txt
-(requirements.txt)
+3. cd langserve/AImodel/chat/
 
-env. 넣기
+4. pip install -r requirements.txt
 
-/langserve/chatbot/app/database 에 chromadb 전체 집어넣기
+5. env. 넣기
 
-cd app
+6. /langserve/chatbot/app/database 에 chromadb 전체 집어넣기
 
-uvicorn server:app --host 0.0.0.0 --port 8080 --reload
+7. cd app
 
-url : (http://localhost:8080/docs)
+8. uvicorn server:app --host 0.0.0.0 --port 8080 --reload
+
+9. url : (http://localhost:8080/docs)
 
 
-== swagger == 
+### == swagger == 
 
 
 = chat == # output : answer
