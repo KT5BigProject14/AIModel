@@ -1,31 +1,32 @@
-## 사용법
+# 사용법
 
 
-### == terminal ==
+## == terminal ==
 
-1. conda create -n (환경_이름) python=3.11.9
+'''bash
+conda create -n (환경_이름) python=3.11.9
 
-2. conda activate (환경_이름)
+conda activate (환경_이름)
 
-3. cd langserve/AImodel/chat/
+cd langserve/AImodel/chat/
 
-4.
-"""
 pip install -r requirements.txt
-"""
+'''
 
-7. env. 넣기
+### env. 넣기
 
-8. /langserve/chatbot/app/database 에 chromadb 전체 집어넣기
+### /langserve/chatbot/app/database 에 chromadb 전체 집어넣기
 
-9. cd app
+'''bash
+cd app
 
-10. uvicorn server:app --host 0.0.0.0 --port 8080 --reload
+uvicorn server:app --host 0.0.0.0 --port 8080 --reload
 
-11. url : (http://localhost:8080/docs)
+url : (http://localhost:8080/docs)
+'''
 
 
-### == swagger == 
+## == swagger == 
 
 
 = chat == # output : answer
