@@ -1,14 +1,24 @@
 사용법
 
-env. 넣기
-환경설정(requirements.txt)
 
 == terminal ==
+환경설정
+conda create -n (환경_이름) python=3.11.9
 
+conda activate (환경_이름)
 
-cd langserve/AImodel/chat/app
+cd langserve/AImodel/chat/
+
+pip install -r requirements.txt
+(requirements.txt)
+
+env. 넣기
+
+cd app
 
 uvicorn server:app --host 0.0.0.0 --port 8080 --reload
+
+url : (http://localhost:8080/docs)
 
 
 == swagger == 
