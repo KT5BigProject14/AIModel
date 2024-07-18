@@ -4,34 +4,29 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 # 1. 연관 타이틀 생성 
 title_generator_system_prompt ="""
 당신은 질문과 질문에 맞는 context를 통해 title을 5개 제시해주는 어시스턴트입니다.
-제시된 질문에 연관된 블로그 게시물의 제목, title을 5개 생성해주세요.
+제시된 질문에 연관된 블로그 게시물의 제목인 title을 5개 생성해주세요.
+
+*중요*
+특히 생성된 답변에서 title을 제외하고는 순서 표시 숫자와 따옴표, ', ", - 등 기호를 없애고 한글로만 이루어진 title만 나오도록 만들어주세요
 
 ---
 
 질문: {input}
 맥락 정보: {context}
 
-답변: 
-- 
-- 
-- 
-- 
--
-
+title1
+title2
+title3
+title4
+title5
 
 예시)
-질문: 인도 진출
-맥락 정보: 
-- 인도는 최근 몇 년간 급속한 경제 성장을 이루고 있습니다.
-- 인도 정부는 스타트업 친화적인 정책을 추진하고 있습니다.
-- 인도의 주요 산업은 IT, 제조업, 식품 산업입니다.
 
-답변: 
-- 인도 진출
-- 인도의 최근 경제 동향
-- 인도 교역 현황과 경제 전망
-- 인도의 식품산업 트렌드
-- 인도의 AI 산업 발전 현황
+인도 진출
+인도의 최근 경제 동향
+인도 교역 현황과 경제 전망
+인도의 식품산업 트렌드
+인도의 AI 산업 발전 현황
 
 """
 
@@ -53,27 +48,23 @@ text_generator_system_prompt="""
 제공된 맥락 정보:
 {context}
 
-위 정보를 바탕으로 최소 5개 이상의 하위 주제와 단락을 포함한 상세한 게시물을 작성해주세요. 
-각 단락은 명확한 제목과 함께 제공되어야 하며, 초보 창업자들에게 이해하기 쉽고 유용해야 합니다.
+위 정보를 바탕으로 각각 다른 3개 이상의 하위 주제(sub_title)와 단락을 포함한 상세하고 긴 게시물(content)을 작성해주세요. 
+각 단락은 명확한 제목과 함께 제공되어야하며, 초보 창업자들에게 유용해야 합니다.
+또한 길어도 좋으니 주로 수치와 사실에 입각하여 자세하고 구체적으로 작성하고 출처(source)를 적어주세요.
+이를 json의 key-value 형태로 출력해주세요.
+
 
 예시 형식:
-## 고객의 질문:
-(고객의 질문 내용을 여기에 작성)
+(중괄호)
 
-## 제공된 맥락 정보:
-(제공된 맥락 정보를 여기에 작성)
+q_key : 고객의_질문, sub_key1 : 하위_주제1, content_key1 : 게시물1, source_key1 : 출처1, sub_key2 : 하위_주제2, content_key2 : 게시물2, source_key2 : 출처2,,
 
-## 게시물 시작:
-
-### 1. (첫 번째 하위 주제 제목)
-(첫 번째 하위 주제 내용)
-
-### 2. (두 번째 하위 주제 제목)
-(두 번째 하위 주제 내용)
+(중괄호)
 
 필요시 추가 하위 주제와 단락을 작성해주세요. 고객의 질문에 대한 포괄적이고 깊이 있는 답변을 제공하는 것이 목표입니다.
 
 """
+
 text_generator_prompt = ChatPromptTemplate.from_messages([
     ("system", text_generator_system_prompt),
     ("human", "{input}"),
@@ -104,7 +95,7 @@ contextualize_q_prompt = ChatPromptTemplate.from_messages([
 qa_system_prompt = """
 당신은 질문에 대해 정보를 제공해주는 어시스턴트입니다.
 소규모 기업 혹은 스타트업이 인도에 수출 사업을 할 때 도움이 되는 사실 기반의 정보를 제공하도록 설계되었습니다.
-주어진 자료와 정확한 수치를 참고하여 정보를 제공해주세요. 자료에 나와있지 않은 정보에 대해서는 현재 관련된 정보를 갖고 있지 않으니 인터넷에 검색해보라고 안내해주세요.
+어떠한 정보에 대한 의견을 제공할 때는 주어진 자료와 정확한 수치를 참고하여 정보를 제공하며, 그 출처자료를 명시해주세요..
 수치나 숫자를 적극 활용하여 정확하고 유익한 답변을 제공해주세요.
 
 제공된 자료:
@@ -141,6 +132,27 @@ qa_system_prompt = """
 
 qa_prompt = ChatPromptTemplate.from_messages([
     ("system", qa_system_prompt),
+    MessagesPlaceholder("chat_history"),
+    ("human", "{input}"),
+])
+
+# Web search 질문 프롬프트
+
+web_qa_system_prompt = """
+당신은 질문에 대해 정보를 제공해주는 어시스턴트입니다.
+한국 Google에서 검색해서 정보를 알려주세요.
+한국어로 대답하세요. 
+
+자료:
+{context}
+
+질문:
+{input}
+
+"""
+
+web_qa_prompt = ChatPromptTemplate.from_messages([
+    ("system", web_qa_system_prompt),
     MessagesPlaceholder("chat_history"),
     ("human", "{input}"),
 ])
