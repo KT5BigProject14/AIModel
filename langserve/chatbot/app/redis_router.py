@@ -1,7 +1,7 @@
 # redis_router.py
 from fastapi import APIRouter, HTTPException, FastAPI
 from pydantic import BaseModel
-from utils.redis_utils import save_message_to_redis, get_messages_from_redis, scan_keys, delete_message_from_redis
+from app.utils.redis_utils import save_message_to_redis, get_messages_from_redis, scan_keys, delete_message_from_redis
 import uuid
 from typing import Optional
 from typing import List

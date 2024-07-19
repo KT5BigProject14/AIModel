@@ -2,9 +2,15 @@ from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from fastapi.responses import RedirectResponse, JSONResponse
 import uvicorn
 from pydantic import BaseModel
-from RAGPipeLine import Ragpipeline
-from redis_router import router as redis_router  # Redis 라우터 임포트
+from app.RAGPipeLine import Ragpipeline
+from app.redis_router import router as redis_router  # Redis 라우터 임포트
 from langserve import add_routes
+
+import sys
+import os
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 
 app = FastAPI()
 

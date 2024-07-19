@@ -1,8 +1,8 @@
 # RAGPipeLine.py
 from fastapi import FastAPI, HTTPException, Request
 import logging
-from utils.update import split_document, convert_file_to_documents
-from utils.prompt import contextualize_q_prompt, qa_prompt
+from app.utils.update import split_document, convert_file_to_documents
+from app.utils.prompt import contextualize_q_prompt, qa_prompt
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.runnables import RunnableBranch, RunnablePassthrough
@@ -23,10 +23,10 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from utils.prompt import *
-from utils.config import *
-from utils.redis_utils import save_message_to_redis, get_messages_from_redis
-from core.redis_config import redis_conn  # Redis 설정 임포트
+from app.utils.prompt import *
+from app.utils.config import *
+from app.utils.redis_utils import save_message_to_redis, get_messages_from_redis
+from app.core.redis_config import redis_conn  # Redis 설정 임포트
 from langchain_core.runnables import RunnableParallel
 # from langchain.retrievers import WebResearchRetriever
 from langchain.retrievers.web_research import WebResearchRetriever

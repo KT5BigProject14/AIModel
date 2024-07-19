@@ -1,5 +1,5 @@
 # redis_utils.py
-from core.redis_config import redis_conn
+from app.core.redis_config import redis_conn
 
 from pydantic import BaseModel
 from typing import List
