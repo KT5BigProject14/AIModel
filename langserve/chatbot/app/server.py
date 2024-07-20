@@ -58,7 +58,7 @@ async def chat(chat_request: ChatRequest):
         ragpipe.current_session_id = chat_request.session_id
         response = ragpipe.chat_generation(chat_request.question)
 
-        return ChatResponse(response=response['answer'], session_id=chat_request.session_id)
+        return ChatResponse(response=response["answer"], session_id=chat_request.session_id)
     except KeyError as e:
         raise HTTPException(status_code=400, detail=f"Missing field: {e}")
     except Exception as e:

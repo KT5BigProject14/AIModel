@@ -57,12 +57,13 @@ class Ragpipeline:
         self.retriever = self.init_retriever()
         self.web_retriever = self.init_web_research_retriever()
         self.mq_retriever = self.init_multi_query_retriever()
-        self.web_chain = self.init_web_chat_chain()
-        self.title_chain = self.init_title_chain()
-        self.text_chain = self.init_text_chain()
         self.bm25_retriever = self.init_bm25_retriever()
         self.ensemble_retriever = self.init_ensemble_retriever()
         self.mq_ensemble_retriever = self.init_mq_ensemble_retriever()
+        self.web_chain = self.init_web_chat_chain()
+        self.title_chain = self.init_title_chain()
+        self.text_chain = self.init_text_chain()
+        self.ensemble_chain = self.init_ensemble_chain()
         self.mq_ensemble_chain = self.init_mq_ensemble_chain()
         self.session_histories = {}
         self.current_user_email = None
@@ -108,7 +109,7 @@ class Ragpipeline:
 
         ensemble_retriever = EnsembleRetriever(
             retrievers=[bm25_retriever, chroma_retriever],
-            weights=[0.5, 0.5],
+            weights=[0.4, 0.6],
             search_type=config["ensemble_search_type"],
         )
 
@@ -160,6 +161,19 @@ class Ragpipeline:
             history_aware_retriever, question_answer_chain)
 
         return rag_chat_chain
+    
+    def init_ensemble_chain(self):
+        
+        history_aware_retriever = create_history_aware_retriever(
+            self.llm, self.ensemble_retriever, contextualize_q_prompt
+        )
+        question_answer_chain = create_stuff_documents_chain(
+            self.llm, qa_prompt)
+        rag_chat_chain = create_retrieval_chain(
+            history_aware_retriever, question_answer_chain)
+        print("[갱신] ensemble RAG chain history 갱신 완료")
+        return rag_chat_chain
+    
 
     def init_mq_ensemble_chain(self):
 
@@ -183,7 +197,7 @@ class Ragpipeline:
         question_answer_chain = create_stuff_documents_chain(
             self.llm, text_generator_prompt)
         rag_text_chain = create_retrieval_chain(
-            self.retriever, question_answer_chain)
+            self.mq_ensemble_retriever, question_answer_chain)
         return rag_text_chain
 
     def chat_generation(self, question: str) -> dict:
@@ -207,7 +221,8 @@ class Ragpipeline:
         if results[0][1] > 0.3:  # web chain
             final_chain = self.web_chain
         else:
-            final_chain = self.init_mq_ensemble_chain()
+            final_chain = self.ensemble_chain
+
 
         conversational_rag_chain = RunnableWithMessageHistory(
             final_chain,
@@ -226,17 +241,18 @@ class Ragpipeline:
                               self.current_session_id, question)
         save_message_to_redis(self.current_user_email,
                               self.current_session_id, response["answer"])
-        # print(response)
+        print(response)
         return response
 
     def title_generation(self, question: str):
         title_chain = self.title_chain
         response = title_chain.invoke({'input': question})
+        print(response)
         return response
 
     def text_generation(self, question: str):
 
         text_chain = self.text_chain
         response = text_chain.invoke({'input': question})
-
+        print(response)
         return response

@@ -22,6 +22,7 @@ pip install -r requirements.txt
 cd app
 
 uvicorn server:app --host localhost --port 8080 --reload
+(혹은 python server.py)
 
 ```
 
