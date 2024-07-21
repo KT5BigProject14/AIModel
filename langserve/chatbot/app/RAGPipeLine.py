@@ -1,8 +1,8 @@
 # RAGPipeLine.py
 from fastapi import FastAPI, HTTPException, Request
 import logging
-from app.utils.update import split_document, convert_file_to_documents
-from app.utils.prompt import contextualize_q_prompt, qa_prompt
+from utils.update import split_document, convert_file_to_documents
+from utils.prompt import contextualize_q_prompt, qa_prompt
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.runnables import RunnableBranch, RunnablePassthrough
@@ -16,6 +16,7 @@ from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
 # from langchain_core.runnables import Runnable
+from langchain.chains import LLMChain
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from langchain_community.vectorstores import FAISS
@@ -23,13 +24,14 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from app.utils.prompt import *
-from app.utils.config import *
-from app.utils.redis_utils import save_message_to_redis, get_messages_from_redis
-from app.core.redis_config import redis_conn  # Redis 설정 임포트
+from langchain.llms import OpenAI
+from utils.prompt import *
+from utils.config import *
+from utils.redis_utils import save_message_to_redis, get_messages_from_redis
+from core.redis_config import redis_conn  # Redis 설정 임포트
 from langchain_core.runnables import RunnableParallel
 # from langchain.retrievers import WebResearchRetriever
-from langchain.retrievers.web_research import WebResearchRetriever
+from langchain_community.retrievers.web_research import WebResearchRetriever
 # from langchain.utilities import GoogleSearchAPIWrapper
 from langchain_google_community import GoogleSearchAPIWrapper
 # Retriever 기법
@@ -55,12 +57,12 @@ class Ragpipeline:
         )
         self.vector_store = self.init_vectorDB()
         self.retriever = self.init_retriever()
-        self.web_retriever = self.init_web_research_retriever()
+        # self.web_retriever = self.init_web_research_retriever()
         self.mq_retriever = self.init_multi_query_retriever()
         self.bm25_retriever = self.init_bm25_retriever()
         self.ensemble_retriever = self.init_ensemble_retriever()
         self.mq_ensemble_retriever = self.init_mq_ensemble_retriever()
-        self.web_chain = self.init_web_chat_chain()
+        # self.web_chain = self.init_web_chat_chain()
         self.title_chain = self.init_title_chain()
         self.text_chain = self.init_text_chain()
         self.ensemble_chain = self.init_ensemble_chain()
@@ -125,17 +127,26 @@ class Ragpipeline:
 
         return mq_ensemble_retriever
 
-    def init_web_research_retriever(self):
-        """ Web Research Retriever 초기화 """
-        search = GoogleSearchAPIWrapper()
-        vectorstore = Chroma(embedding_function=OpenAIEmbeddings(),
-                             persist_directory="./temp_web_db")
-        web_retriever = WebResearchRetriever.from_llm(
-            vectorstore=vectorstore,
-            llm=self.llm,
-            search=search,
-        )
-        return web_retriever
+    # def init_web_research_retriever(self):
+    #     """ Web Research Retriever 초기화 """
+    #     search = GoogleSearchAPIWrapper()
+    #     allow_dangerous_requests = False
+    #     vectorstore = Chroma(embedding_function=OpenAIEmbeddings(),
+    #                          persist_directory="./temp_web_db")
+    #     llm_chain = LLMChain(
+    #     llm=self.llm
+    # )
+    #     web_retriever = WebResearchRetriever(vectorstore = vectorstore, llm_chain = llm_chain, search = search, allow_dangerous_requests = False).from_llm(
+    #         vectorstore=vectorstore,
+    #         llm=self.llm,
+    #         search=search,
+    #     )
+    #     # web_retriever = web_retriever.from_llm(
+    #     #     vectorstore=vectorstore,
+    #     #     llm=self.llm,
+    #     #     search=search,
+    #     # )
+    #     return web_retriever
 
     def init_multi_query_retriever(self):
         """사용자의 질문을 여러 개의 유사 질문으로 재생성 """
@@ -218,10 +229,10 @@ class Ragpipeline:
 
         results = self.vector_store.similarity_search_with_score(question, k=1)
 
-        if results[0][1] > 0.3:  # web chain
-            final_chain = self.web_chain
-        else:
-            final_chain = self.ensemble_chain
+        # if results[0][1] > 0.3:  # web chain
+        #     final_chain = self.web_chain
+        # else:
+        final_chain = self.ensemble_chain
 
 
         conversational_rag_chain = RunnableWithMessageHistory(

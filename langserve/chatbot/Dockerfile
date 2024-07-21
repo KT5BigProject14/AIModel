@@ -13,8 +13,8 @@ RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
 # 나머지 애플리케이션 코드 복사
-COPY . .
+COPY ./app /app
 
 EXPOSE 8080
 
-CMD ["uvicorn", "app.server:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8080"]
