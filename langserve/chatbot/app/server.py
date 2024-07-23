@@ -1,10 +1,14 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Request
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import RedirectResponse, JSONResponse
 import uvicorn
+import pickle
 from pydantic import BaseModel
 from RAGPipeLine import Ragpipeline
 from redis_router import router as redis_router  # Redis 라우터 임포트
 from langserve import add_routes
+from tqdm import tqdm
+from langchain_community.vectorstores import Chroma
+from langchain_openai import OpenAIEmbeddings
 
 import sys
 import os
@@ -95,15 +99,61 @@ def generate_text(text_request: TextRequest):
 
 
 @app.post("/update-vector-db")
-async def update_vector_db(file: UploadFile = File(...)):
+async def update_docs(new_data_file: UploadFile = File(...)):
     try:
-        filename = file.filename
-        file_content = await file.read()
-        success = ragpipe.update_vector_db(file_content, filename)
-        if success:
-            return {"status": "success", "message": "Vector store updated successfully."}
+        # 업로드된 파일을 저장
+        new_data_path = "./database/new_data.pkl"
+        with open(new_data_path, "wb") as f:
+            f.write(new_data_file.file.read())
+
+        # new_data.pkl 파일을 로드
+        with open(new_data_path, 'rb') as f:
+            new_docs = pickle.load(f)
+
+        # all_docs.pkl 파일을 로드
+        all_docs_path = './database/all_docs.pkl'
+        if os.path.exists(all_docs_path):
+            with open(all_docs_path, 'rb') as f:
+                all_docs = pickle.load(f)
         else:
-            return {"status": "failed", "message": "Document was too similar to existing entries."}
+            all_docs = []
+
+        # OpenAI Embeddings 및 Chroma 설정
+        embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
+        persist_dir = './database'
+        vector_store = Chroma(
+            persist_directory=persist_dir,  # 있으면 가져오고 없으면 생성
+            embedding_function=embeddings
+        )
+
+        # Convert tuples to Document objects
+        def convert_to_documents(docs):
+            document_list = []
+            for doc in docs:
+                try:
+                    # Assuming each doc is a tuple (content, metadata)
+                    content, metadata = doc
+                    document_list.append(
+                        Document(page_content=content, metadata=metadata))
+                except ValueError:
+                    print(f"Skipping invalid document: {doc}")
+            return document_list
+
+        new_docs_converted = convert_to_documents(new_docs)
+        all_docs_converted = convert_to_documents(all_docs)
+
+        # Add new documents to vector store and update all_docs
+        for doc in tqdm(new_docs_converted):
+            print(f"Updating {doc}...")
+            vector_store.add_documents([doc])  # Add to vector store
+            all_docs_converted.append(doc)     # Add to all_docs
+
+        # 업데이트된 all_docs를 pickle 파일로 저장
+        with open(all_docs_path, 'wb') as file:
+            pickle.dump(all_docs, file)
+
+        return JSONResponse(content={"message": "all_docs 객체가 성공적으로 저장되었습니다."})
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
