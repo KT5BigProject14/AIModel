@@ -7,8 +7,9 @@ from RAGPipeLine import Ragpipeline
 from redis_router import router as redis_router  # Redis 라우터 임포트
 from langserve import add_routes
 from tqdm import tqdm
-from langchain_community.vectorstores import Chroma, Document
+from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings
+from langchain.schema import Document
 
 import sys
 import os
