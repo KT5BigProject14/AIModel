@@ -158,11 +158,67 @@ async def update_docs(new_data_file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.delete("/delete-vector-db")
-async def delete_vector_db(doc_id: str):
+@app.post("/delete-vector-db")
+async def delete_docs(delete_data_file: UploadFile = File(...)):
     try:
-        ragpipe.delete_vector_db_by_doc_id(doc_id)
-        return {"status": "success", "message": f"Document with ID {doc_id} deleted successfully."}
+        # 업로드된 파일을 저장
+        delete_data_path = "./database/delete_data.pkl"
+        with open(delete_data_path, "wb") as f:
+            f.write(delete_data_file.file.read())
+
+        # delete_data.pkl 파일을 로드
+        with open(delete_data_path, 'rb') as f:
+            delete_docs = pickle.load(f)
+
+        # all_docs.pkl 파일을 로드
+        all_docs_path = './database/all_docs.pkl'
+        if os.path.exists(all_docs_path):
+            with open(all_docs_path, 'rb') as f:
+                all_docs = pickle.load(f)
+        else:
+            raise HTTPException(
+                status_code=404, detail="all_docs.pkl 파일을 찾을 수 없습니다.")
+
+        # OpenAI Embeddings 및 Chroma 설정
+        embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
+        persist_dir = './database'
+        vector_store = Chroma(
+            persist_directory=persist_dir,  # 있으면 가져오고 없으면 생성
+            embedding_function=embeddings
+        )
+
+        # Convert tuples to Document objects
+        def convert_to_documents(docs):
+            document_list = []
+            for doc in docs:
+                try:
+                    # Assuming each doc is a tuple (content, metadata)
+                    content, metadata = doc
+                    document_list.append(
+                        Document(page_content=content, metadata=metadata))
+                except ValueError:
+                    print(f"Skipping invalid document: {doc}")
+            return document_list
+
+        delete_docs_converted = convert_to_documents(delete_docs)
+        all_docs_converted = convert_to_documents(all_docs)
+
+        # Remove documents from vector store and all_docs
+        remaining_docs = []
+        for doc in tqdm(all_docs_converted):
+            if doc not in delete_docs_converted:
+                remaining_docs.append(doc)
+            else:
+                print(f"Deleting {doc} from vector store...")
+                vector_store.delete_documents(
+                    [doc])  # Remove from vector store
+
+        # 업데이트된 all_docs를 pickle 파일로 저장
+        with open(all_docs_path, 'wb') as file:
+            pickle.dump(remaining_docs, file)
+
+        return JSONResponse(content={"message": "all_docs 객체가 성공적으로 업데이트되었습니다."})
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
